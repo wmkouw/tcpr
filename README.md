@@ -1,2 +1,4 @@
-# da-mcpl
-Code for Domain Adaptive Maximum Contrastive Pessimistic Likelihood Estimation
+# tce
+Code for Target Contrastive Estimation
+- Linear Discriminant Analysis
+- Least-Squares
