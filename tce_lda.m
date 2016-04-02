@@ -11,7 +11,7 @@ function [theta,varargout] = tce_lda(X,yX,Z,varargin)
 % 			maxIter maximum number of iterations (default: 500)
 % 			xTol 	convergence criterion (default: 1e-5)
 % 			viz		visualization during optimization (default: false)
-% Output:   
+% Output:
 % 			theta   target model estimate
 % Optional output:
 %           {1}   	target likelihood of the tce estimate
@@ -21,7 +21,7 @@ function [theta,varargout] = tce_lda(X,yX,Z,varargin)
 %			{5}		target error of the source estimate
 %			{6}		target predictions of the source estimate
 %
-% Wouter M. Kouw (2016). Target Contrastive Estimator for Robust Domain Adaptation, UAI. 
+% Wouter M. Kouw (2016). Target Contrastive Estimator for Robust Domain Adaptation, UAI.
 % Last update: 01-04-2016
 
 % Parse hyperparameters
@@ -57,7 +57,7 @@ La_ref = svdinv((S_ref+S_ref')./2);
 ll_ref = ll_lda(pi_ref,mu_ref,La_ref,Z);
 
 % Initialize target posterior
-q = min(max(myprojsplx(ll_ref), realmin), 1-realmin);
+q = min(max(proj_splx(ll_ref')', realmin), 1-realmin);
 
 disp('Starting MCPL optimization');
 llmm = Inf;
@@ -87,7 +87,7 @@ for n = 1:p.Results.maxIter
     Dq = ll_mcpl - ll_ref;
     
     % Apply gradient and project back onto simplex
-    q = min(max(myprojsplx(q - Dq./(p.Results.alpha+n)), realmin), 1-realmin);
+    q = min(max(proj_splx((q - Dq./(p.Results.alpha+n))')', realmin), 1-realmin);
     
     % Visualize
     if p.Results.viz
@@ -100,13 +100,20 @@ for n = 1:p.Results.maxIter
             for j = 1:size(Z,1)
                 plot(Z(j,1),Z(j,2), 'Color', cm(1+round(q(j,1)*63),:), 'Marker', mk{p.Results.yZ(j)}, 'LineStyle', 'none');
             end
+            h_m = plotl(theta.mcpl, 'Color','r', 'LineStyle', '-.');
+            h_r = plotl(theta.ref, 'Color','b','LineStyle',':');
+            
+            legend([h_m h_r], {'MCPL', 'ref'});
+            colorbar
+            colormap(cool)
+            
             drawnow
             pause(.1);
         end
     end
     
     % Break or update
-    llmm_ = ll_mcpl.*q;
+    llmm_ = sum(sum(ll_mcpl.*q - ll_ref.*q,2),1);
     
     dll = norm(llmm-llmm_);
     if isnan(dll); error('Numeric error'); end
@@ -134,5 +141,87 @@ if ~isempty(p.Results.yZ);
     
     varargout{7} = q;
 end
+
+end
+
+
+
+function [ll] = ll_lda(pi_k,mu_k,La,X,y)
+% Function to compute log-likelihood of samples under an LDA model
+
+% Shapes
+K = length(pi_k);
+[N,D] = size(X);
+
+% Check whether mean is transposed
+if size(mu_k,2)~=D; mu_k = mu_k'; end
+
+% Check for precomputation of svd of precision matrix
+if iscell(La);
+    U = La{1};
+    S = La{2};
+    V = La{3};
+else
+    [U,S,V] = svd(La);
+end
+
+% Log partition function constant
+C = (-D*log(2*pi)+sum(log(realmin+diag(S)),1))./2;
+
+% Initialize log-likelihood with partition function constant
+ll = zeros(N,K);
+for k = 1:K
+    
+    % Compute log-likelihood of an unlabeled sample for class k
+    ll(:,k) = C - 1./2*sum((bsxfun(@minus,X,mu_k(k,:))*(U*sqrt(S)*V')).^2,2) + log(pi_k(k));
+    
+    if exist('y','var');
+        
+        % Weigh likelihood with label
+        if isvector(y)
+            % Crisp labels
+            ll(:,k) = ll(:,k).*(y==k);
+        else
+            % Soft labels
+            ll(:,k) = ll(:,k).*y(:,k);
+        end
+    end
+end
+
+end
+
+
+
+function [err,pred] = lda_err(X,y,mu,La)
+% Function to compute LDA error rate
+
+% Classes
+[N,D] = size(X);
+uy = unique(y);
+K = numel(uy);
+
+% Check for precomputation of svd of precision matrix
+if iscell(La);
+    U = La{1};
+    S = La{2};
+    V = La{3};
+else
+    [U,S,V] = svd(La);
+end
+
+% Log partition function constant
+C = (-D*log(2*pi)+sum(log(diag(S)),1))./2;
+
+% Initialize log-likelihood with partition function constant
+pk = zeros(N,K);
+for k = 1:K
+    % Compute log-likelihood of an unlabeled sample for class k
+    pk(:,k) = C - 1./2*sum((bsxfun(@minus,X,mu(k,:))*(U*sqrt(S)*V')).^2,2);
+end
+
+% Compute mean of misclassified objects
+[~,pred] = max(pk, [], 2);
+err = mean(pred~=y);
+
 
 end
