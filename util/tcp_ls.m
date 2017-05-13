@@ -137,24 +137,24 @@ if nargout > 1
         R.orc_u = mean((Z*theta.orc - yZ).^2,1);
         
         % Posteriors
-        post.tcp = exp(Z*theta.tcp)./(exp(-Z*theta.tcp) + exp(Z*theta.tcp));
-        post.ref = exp(Z*theta.ref)./(exp(-Z*theta.ref) + exp(Z*theta.ref));
-        post.orc = exp(Z*theta.orc)./(exp(-Z*theta.orc) + exp(Z*theta.orc));
+        post.tcp_u = exp(Z*theta.tcp)./(exp(-Z*theta.tcp) + exp(Z*theta.tcp));
+        post.ref_u = exp(Z*theta.ref)./(exp(-Z*theta.ref) + exp(Z*theta.ref));
+        post.orc_u = exp(Z*theta.orc)./(exp(-Z*theta.orc) + exp(Z*theta.orc));
         
         % Predictions
-        pred.tcp = sign(Z*theta.tcp);
-        pred.ref = sign(Z*theta.ref);
-        pred.orc = sign(Z*theta.orc);
+        pred.tcp_u = sign(Z*theta.tcp);
+        pred.ref_u = sign(Z*theta.ref);
+        pred.orc_u = sign(Z*theta.orc);
         
         % Error on true labeling
-        e.tcp = mean(pred.tcp ~= yZ);
-        e.ref = mean(pred.ref ~= yZ);
-        e.orc = mean(pred.orc ~= yZ);
+        e.tcp_u = mean(pred.tcp_u ~= yZ);
+        e.ref_u = mean(pred.ref_u ~= yZ);
+        e.orc_u = mean(pred.orc_u ~= yZ);
         
         % AUC on true labeling
-        [~,~,~,AUC.tcp] = perfcurve(yZ,post.tcp,+1);
-        [~,~,~,AUC.ref] = perfcurve(yZ,post.ref,+1);
-        [~,~,~,AUC.orc] = perfcurve(yZ,post.orc,+1);
+        [~,~,~,AUC.tcp_u] = perfcurve(yZ,post.tcp_u,+1);
+        [~,~,~,AUC.ref_u] = perfcurve(yZ,post.ref_u,+1);
+        [~,~,~,AUC.orc_u] = perfcurve(yZ,post.orc_u,+1);
         
         % Output predictions and error
         varargout{3} = e;

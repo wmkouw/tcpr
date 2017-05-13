@@ -3,8 +3,6 @@
 close all;
 clearvars;
 
-sav = false;
-
 % Load data
 dataname = 'hdis_imp0';
 load(dataname)
@@ -12,7 +10,7 @@ load(dataname)
 % Experimental parameters
 clfs = {'tca', 'kmm', 'rcsa', 'rba', 'tcp-ls', 'tcp-lda', 'tcp-qda'};
 cc = 1:12;
-nR = 1;
+nR = 10;
 no = '1';
 prep = 'max';
 
@@ -44,18 +42,35 @@ for c = 1:length(clfs)
         for r = 1:nR
             
             switch clfs{c}
-                case {'sls','tcp-ls','tls','slda','tcp-lda','tlda','sqda', 'tcp-qda', 'tqda'}
-                    % Average loglikelihood
-                    a_r(c,n,r) = R{r};
+                case {'sls', 'tcp-ls', 'tls'}
+                    % Risk
+                    a_r(c,n,r) = R{r}.ref_u;
                     
                     % Error rate
-                    a_e(c,n,r) = e{r};
+                    a_e(c,n,r) = e{r}.ref_u;
                     
                     % AUC
-                    a_a(c,n,r) = AUC{r};
+                    a_a(c,n,r) = AUC{r}.ref_u;
+                case {'tcp-ls', 'tcp-lda', 'tcp-qda'}
+                    % Risk
+                    a_r(c,n,r) = R{r}.tcp_u;
                     
+                    % Error rate
+                    a_e(c,n,r) = e{r}.tcp_u;
+                    
+                    % AUC
+                    a_a(c,n,r) = AUC{r}.tcp_u;
+                case {'tls', 'tdla', 'tqda'}
+                    % Risk
+                    a_r(c,n,r) = R{r}.orc_u;
+                    
+                    % Error rate
+                    a_e(c,n,r) = e{r}.orc_u;
+                    
+                    % AUC
+                    a_a(c,n,r) = AUC{r}.orc_u;
                 otherwise
-                    % Average loglikelihood
+                    % Risk
                     a_r(c,n,r) = R(r);
                     
                     % Error rate
@@ -68,18 +83,11 @@ for c = 1:length(clfs)
     end
 end
 
-% Compute standard error of the mean
-if nR>1
-    s_r = std(a_r, [], 3, 'omitnan');
-    s_e = std(a_e, [], 3, 'omitnan');
-    s_a = std(a_a, [], 3, 'omitnan');
-else
-    s_r = zeros(nCl,nCc);
-    s_e = zeros(nCl,nCc);
-    s_a = zeros(nCl,nCc);
-end
-
 % Average over repeats
 m_r = mean(a_r, 3, 'omitnan');
 m_e = mean(a_e, 3, 'omitnan');
 m_a = mean(a_a, 3, 'omitnan');
+
+% Combine into table
+clfs_names = {'tca', 'kmm', 'rcsa', 'rba', 'tcp_ls', 'tcp_lda', 'tcp_qda'};
+T = array2table(m_a', 'VariableNames', clfs_names)

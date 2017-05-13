@@ -5,19 +5,20 @@ addpath(genpath('../minFunc'));
 addpath(genpath('../util'));
 addpath(genpath('~/Repos/da-tools/'));
 
-% Hyperparameters
+% Experimental parameters
 prep = 'max';
 nR = 10;
 
+% Hyperparameters
+lambda = 0.1;
+alpha = 2;
+
+% Optimization parameters
 xTol = 1e-8;
 maxIter = 1e3;
 
-lambda = 0.01;
-alpha = 2;
-
-
+% Loop over all included classifiers
 clfs = {'tca', 'kmm-lsq', 'rcsa', 'rba', 'tcp-ls', 'tcp-lda', 'tcp-qda'};
-
 for c = 1:length(clfs)
 
     exp_da_hdis('prep', {prep}, 'nR', nR, 'clf', clfs{c}, ...
