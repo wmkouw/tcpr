@@ -1,6 +1,5 @@
 function [theta,varargout] = tcp_lda(X,yX,Z,varargin)
-% Function to run the Linear Discriminant Analysis version of the
-% Target Contrastive Pessimistic Estimator
+% Linear Discriminant Analysis version of the Target Contrastive Pessimistic Estimator
 % Input:
 % 		    X      	source data (N samples x D features)
 %           Z      	target data (M samples x D features)

@@ -1,5 +1,5 @@
-function [theta,varargout] = tce_ls(X,yX,Z,varargin)
-% Function to run the Least-Squares version of the Target Contrastive Pessimistic Estimator
+function [theta,varargout] = tcp_ls(X,yX,Z,varargin)
+% Least-Squares version of the Target Contrastive Pessimistic Estimator
 % Input:
 % 		    X      	source data (N samples x D features)
 %           Z      	target data (M samples x D features)
@@ -11,7 +11,7 @@ function [theta,varargout] = tce_ls(X,yX,Z,varargin)
 % 			maxIter maximum number of iterations (default: 500)
 % 			xTol 	convergence criterion (default: 1e-5)
 % Output:
-% 			theta   tce estimate
+% 			theta   tcp estimate
 % Optional output:
 %           {1}     found worst-case labeling q
 %           {2}   	target loss of the mcpl/ref estimate with q/u
@@ -49,7 +49,7 @@ if ~isempty(setdiff(labels,[-1 1]))
 end
 
 % Reference parameter estimates
-theta.ref = (X'*X + p.Results.lambda*eye(D))\(X'*yX);
+theta.ref = (X'*X + p.Results.lambda*N*eye(D))\(X'*yX);
 
 % Initialize
 q = ones(M,K)./K;
@@ -63,7 +63,7 @@ for n = 1:p.Results.maxIter
     %%% Minimization
     
     % Closed-form minimization w.r.t. theta
-    ZZ = svdinv(Z'*Z + p.Results.lambda*eye(D));
+    ZZ = svdinv(Z'*Z + p.Results.lambda*M*eye(D));
     [~,psd] = chol(ZZ); if psd>0; disp('target covariance not psd'); end
     theta.tcp = ZZ*(Z'*(labels(1)*q(:,1) + labels(2)*q(:,2)));
     
@@ -116,7 +116,7 @@ for n = 1:p.Results.maxIter
 end
 
 % Oracle parameter estimates
-theta.orc = (Z'*Z + p.Results.lambda*eye(D))\(Z'*p.Results.yZ);
+theta.orc = (Z'*Z + p.Results.lambda*M*eye(D))\(Z'*p.Results.yZ);
 
 %%% Optional output
 if nargout > 1

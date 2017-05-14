@@ -1,6 +1,5 @@
 function [theta,varargout] = tcp_qda(X,yX,Z,varargin)
-% Function to run the Quadratic Discriminant Analysis version of the
-% Target Contrastive Pessimistic estimator
+% Quadratic Discriminant Analysis version of the Target Contrastive Pessimistic Estimator
 % Input:
 % 		    X      	source data (N samples x D features)
 %           Z      	target data (M samples x D features)

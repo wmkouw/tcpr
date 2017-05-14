@@ -69,7 +69,7 @@ for n = cmbl
             
         % Domain-adaptive classifiers
         case 'tcp-lda'
-            exp_da_tcp(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'alpha', p.Results.alpha, 'lambda', p.Results.lambda, 'clf', 'tcp-lda');
+            exp_da_tcp(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'alpha', p.Results.alpha, 'lambda', p.Results.lambda, 'clf', 'tcp-lda', 'lr', p.Results.lr);
         case 'tcp-qda'
             exp_da_tcp(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'alpha', p.Results.alpha, 'lambda', p.Results.lambda, 'clf', 'tcp-qda', 'lr', p.Results.lr);
         case 'tcp-ls'

@@ -8,7 +8,7 @@ prep = {'minusmin','maxdiv'};
 nR = 1;
 
 % Hyperparameters
-lambda = 1e-1;
+lambda = 1e-3;
 alpha = 2;
 
 % Optimization parameters
@@ -20,7 +20,7 @@ mkdir results
 saveName = 'results/';
 
 % Loop over all included classifiers
-clfs = { 'tca'};
+clfs = {'tca', 'kmm-lsq', 'rcsa', 'rba', 'tcp-ls', 'tcp-lda', 'tcp-qda'};
 for c = 1:length(clfs)
 
     exp_da_hdis('prep', prep, 'nR', nR, 'clf', clfs{c}, ...
