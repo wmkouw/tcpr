@@ -14,5 +14,6 @@ which is currently under review.
 
 ## Dependencies:
 
+- Junfeng Wens's Robust Covariate Shift Adjustment: https://webdocs.cs.ualberta.ca/~jwen4/codes/RobustLearning.zip
 - Xiaojing Ye's projection function: http://ufdc.ufl.edu/IR00000353/
 - Mark Schmidt's minFunc: http://www.cs.ubc.ca/~schmidtm/Software/minFunc.html

@@ -12,21 +12,22 @@ function x = projsplx(y)
 %
 % Jan. 14, 2011.
 
-m = length(y); bget = false;
-
-s = sort(y,'descend'); tmpsum = 0;
-
-for ii = 1:m-1
-    tmpsum = tmpsum + s(ii);
-    tmax = (tmpsum - 1)/ii;
-    if tmax >= s(ii+1)
-        bget = true;
-        break;
-    end
-end
+[N,m] = size(y);
+if m==1
+    x = ones(N,1);
+else
+    S = sort(y,2,'descend');
+    CS = cumsum(S,2);
+    TMAX = bsxfun(@rdivide,CS-1,1:m);
+    Bget = TMAX(:,1:end-1) < S(:,2:end);
+    I = sum(Bget,2)+1;
+    TMAX = TMAX';
+    x = max(bsxfun(@plus,y,-TMAX(I+m*(0:N-1)')),0);
     
-if ~bget, tmax = (tmpsum + s(m) -1)/m; end;
-
-x = max(y-tmax,0);
-
-return;
+    % Correction
+    qProj = (x*[-1 1]' + 1)/2;
+    qProj = min(qProj,1-realmin);
+    qProj = max(qProj,realmin);
+    x = [1-qProj,qProj];
+    x = max(realmin,min(1-realmin,x));
+end

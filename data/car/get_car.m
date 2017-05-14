@@ -1,5 +1,5 @@
 function [D,y] = get_car(varargin)
-% Script to download cylinder bands dataset from UCI machine learning repository
+% Script to download car evaluation dataset from UCI machine learning repository
 
 % Parse
 p = inputParser;

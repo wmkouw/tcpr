@@ -35,8 +35,8 @@ parse(p, varargin{:});
 % Sizes
 [N,D] = size(X);
 [M,~] = size(Z);
-uy = unique(yX);
-K = numel(uy);
+labels = unique(yX);
+K = numel(labels);
 
 % Preallocation
 if K==1
@@ -53,10 +53,10 @@ end
 for k = 1:K
     
     % Parameters
-    Nk = sum(yX==uy(k));
+    Nk = sum(yX==labels(k));
     pi_ref(k) = Nk./N;
-    mu_ref(k,:) = sum(X(yX==uy(k),:),1)./Nk;
-    Si_ref(:,:,k) = (bsxfun(@minus,X(yX==uy(k),:),mu_ref(k,:))'*bsxfun(@minus,X(yX==uy(k),:),mu_ref(k,:)))./Nk;
+    mu_ref(k,:) = sum(X(yX==labels(k),:),1)./Nk;
+    Si_ref(:,:,k) = (bsxfun(@minus,X(yX==labels(k),:),mu_ref(k,:))'*bsxfun(@minus,X(yX==labels(k),:),mu_ref(k,:)))./Nk;
     
     % Regularization
     if p.Results.lambda>0
@@ -66,7 +66,11 @@ for k = 1:K
         Si_ref(:,:,k) = V*E*V' + p.Results.lambda*eye(D);
     end
 end
-% Constrain to total covariance
+
+% Combine class-covariances
+for k = 1:K
+    Si_ref(:,:,k) = Si_ref(:,:,k)*pi_ref(k);
+end
 Si_ref = sum(Si_ref,3);
 
 % Log-likelihood of unlabeled samples under reference model
@@ -75,10 +79,7 @@ ll_ref = ll_lda(pi_ref,mu_ref,Si_ref,Z);
 % Initialize target posterior
 q = ones(M,K)./K;
 
-% Initialize mcpl estimates
-pi_tcp = pi_ref;
-mu_tcp = mu_ref;
-Si_tcp = Si_ref;
+% Start optimization
 llmm = Inf;
 disp('Starting MCPL optimization');
 for n = 1:p.Results.maxIter
@@ -110,7 +111,11 @@ for n = 1:p.Results.maxIter
             Si_tcp(:,:,k) = V*E*V' + p.Results.lambda*eye(D);
         end
     end
-    % Constrain to total covariance
+    
+    % Combine class-covariances
+    for k = 1:K
+        Si_tcp(:,:,k) = Si_tcp(:,:,k)*pi_tcp(k);
+    end
     Si_tcp = sum(Si_tcp,3);
     
     %%%% Minimization
@@ -135,11 +140,11 @@ for n = 1:p.Results.maxIter
     q = q - lr.*Dq;
     
     % Project back onto simplex
-    q = myprojsplx(q);
+    q = projsplx(q);
     
     %%% Check progress
     if rem(n,1e2)==1
-    
+        
         % Maximin likelihood
         llmm_ = mean(sum(ll_tcp.*q - ll_ref.*q,2),1);
         
@@ -161,8 +166,8 @@ end
 if ~isempty(p.Results.yZ)
     
     % Unique target labels
-    uyZ = unique(p.Results.yZ);
-    K = numel(uyZ);
+    labels = unique(p.Results.yZ);
+    K = numel(labels);
     
     % Preallocate
     if K==1
@@ -178,10 +183,10 @@ if ~isempty(p.Results.yZ)
     for k = 1:K
         
         % Parameters
-        Mk = sum(p.Results.yZ==uyZ(k),1);
+        Mk = sum(p.Results.yZ==labels(k),1);
         pi_orc(k) = Mk./M;
-        mu_orc(k,:) = sum(Z(p.Results.yZ==uyZ(k),:),1)./Mk;
-        Si_orc(:,:,k) = (bsxfun(@minus,Z(p.Results.yZ==uyZ(k),:),mu_orc(k,:))'*bsxfun(@minus,Z(p.Results.yZ==uyZ(k),:),mu_orc(k,:)))./Mk;
+        mu_orc(k,:) = sum(Z(p.Results.yZ==labels(k),:),1)./Mk;
+        Si_orc(:,:,k) = (bsxfun(@minus,Z(p.Results.yZ==labels(k),:),mu_orc(k,:))'*bsxfun(@minus,Z(p.Results.yZ==labels(k),:),mu_orc(k,:)))./Mk;
         
         % Regularization
         if p.Results.lambda>0
@@ -191,7 +196,11 @@ if ~isempty(p.Results.yZ)
             Si_orc(:,:,k) = V*E*V' + p.Results.lambda*eye(D);
         end
     end
-    % Constrain to total covariance
+    
+    % Combine class-covariances
+    for k = 1:K
+        Si_orc(:,:,k) = Si_orc(:,:,k)*pi_orc(k);
+    end
     Si_orc = sum(Si_orc,3);
 end
 
@@ -209,7 +218,7 @@ if nargout > 1
     ll.orc_q = mean(sum(ll_lda(pi_orc,mu_orc,Si_orc,Z,q),2),1);
     
     if ~isempty(p.Results.yZ)
-
+        
         % Loss on true labeling
         ll.tcp_u = mean(sum(ll_lda(pi_tcp,mu_tcp,Si_tcp,Z,p.Results.yZ),2),1);
         ll.ref_u = mean(sum(ll_lda(pi_ref,mu_ref,Si_ref,Z,p.Results.yZ),2),1);

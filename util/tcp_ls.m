@@ -37,15 +37,15 @@ if ~all(Z(:,end)==1); Z = [Z ones(size(Z,1),1)]; end
 % Size
 [N,D] = size(X);
 [M,~] = size(Z);
-lab = unique(yX);
-K = numel(lab);
+labels = unique(yX);
+K = numel(labels);
 if K~=2; error('Binary classification only'); end
 
 % Force source labels in {-1,+1}
-if ~isempty(setdiff(lab,[-1 1]))
+if ~isempty(setdiff(labels,[-1 1]))
     disp(['Forcing labels into {-1,+1}']);
     yX(yX~=1) = -1;
-    lab = [-1 1];
+    labels = [-1 1];
 end
 
 % Reference parameter estimates
@@ -65,13 +65,13 @@ for n = 1:p.Results.maxIter
     % Closed-form minimization w.r.t. theta
     ZZ = svdinv(Z'*Z + p.Results.lambda*eye(D));
     [~,psd] = chol(ZZ); if psd>0; disp('target covariance not psd'); end
-    theta.tcp = ZZ*(Z'*(lab(1)*q(:,1) + lab(2)*q(:,2)));
+    theta.tcp = ZZ*(Z'*(labels(1)*q(:,1) + labels(2)*q(:,2)));
     
     %%% Maximization
     
     % Compute new gradient
     for k = 1:K
-        Dq(:,k) = (Z*theta.tcp - lab(k)).^2 - (Z*theta.ref - lab(k)).^2;
+        Dq(:,k) = (Z*theta.tcp - labels(k)).^2 - (Z*theta.ref - labels(k)).^2;
     end
     
     % Update learning rate
@@ -90,13 +90,13 @@ for n = 1:p.Results.maxIter
     q = q + lr.*Dq;
     
     % Project back onto simplex
-    q = myprojsplx(q);
+    q = projsplx(q);
     
     %%% Check progress
     
     % Risk of mcpl and ref estimates
-    R_tcp = mean(q(:,1).*(Z*theta.tcp - lab(1)).^2 + q(:,2).*(Z*theta.tcp - lab(2)).^2,1);
-    R_ref = mean(q(:,1).*(Z*theta.ref - lab(1)).^2 + q(:,2).*(Z*theta.ref - lab(2)).^2,1);
+    R_tcp = mean(q(:,1).*(Z*theta.tcp - labels(1)).^2 + q(:,2).*(Z*theta.tcp - labels(2)).^2,1);
+    R_ref = mean(q(:,1).*(Z*theta.ref - labels(1)).^2 + q(:,2).*(Z*theta.ref - labels(2)).^2,1);
     
     % Check for update under tolerance
     Rmm_ = R_tcp - R_ref;
@@ -122,9 +122,9 @@ theta.orc = (Z'*Z + p.Results.lambda*eye(D))\(Z'*p.Results.yZ);
 if nargout > 1
     
     % Risk of found worst-case labeling
-    R.tcp_q = mean(q(:,1).*(Z*theta.tcp - lab(1)).^2 + q(:,2).*(Z*theta.tcp - lab(2)).^2,1);
-    R.ref_q = mean(q(:,1).*(Z*theta.ref - lab(1)).^2 + q(:,2).*(Z*theta.ref - lab(2)).^2,1);
-    R.orc_q = mean(q(:,1).*(Z*theta.orc - lab(1)).^2 + q(:,2).*(Z*theta.orc - lab(2)).^2,1);
+    R.tcp_q = mean(q(:,1).*(Z*theta.tcp - labels(1)).^2 + q(:,2).*(Z*theta.tcp - labels(2)).^2,1);
+    R.ref_q = mean(q(:,1).*(Z*theta.ref - labels(1)).^2 + q(:,2).*(Z*theta.ref - labels(2)).^2,1);
+    R.orc_q = mean(q(:,1).*(Z*theta.orc - labels(1)).^2 + q(:,2).*(Z*theta.orc - labels(2)).^2,1);
     
     if ~isempty(p.Results.yZ)
         

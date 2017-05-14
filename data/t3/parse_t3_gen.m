@@ -41,8 +41,8 @@ fclose(fileID);
 % processing code is included. To generate code which works for unimportable
 % data, select unimportable cells in a file and regenerate the script.
 
-%% Allocate imported array to column variable names
-D = zeros(size(dataArray,1),size(dataArray,2)-1);
+%% Map to numeric dataset
+D = NaN(size(dataArray,1),size(dataArray,2)-1);
 for a = 1:size(dataArray,2)-1
     
    ua = unique(dataArray{:,a});
@@ -54,7 +54,8 @@ end
 y = D(:,end);
 D = D(:,1:end-1);
 
-y(y==2) = -1;
+y = y-1;
+y(y==0) = -1;
 
 if p.Results.save
     save('t3', 'D','y');

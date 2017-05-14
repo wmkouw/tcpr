@@ -14,7 +14,7 @@ addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'prep', {''});
 addOptional(p, 'lambda', 0);
 addOptional(p, 'alpha', 1);
-addOptional(p, 'svnm', []);
+addOptional(p, 'saveName', []);
 addOptional(p, 'viz', false);
 addOptional(p, 'gif', false);
 parse(p, varargin{:});
@@ -28,16 +28,6 @@ if ~isempty(p.Results.NM); lNM = length(p.Results.NM); else; lNM = 1; end
 % Normalize data
 X = da_prep(X, p.Results.prep);
 Z = da_prep(Z, p.Results.prep);
-
-if strcmp(p.Results.clf, 'tcp-ls')
-    % Force labels in {-1,+1}
-    lab = union(unique(yX),unique(yZ));
-    if ~isempty(setdiff(lab,[-1 1]))
-        disp(['Forcing labels into {-1,+1}']);
-        yX(yX~=1) = -1;
-        yZ(yZ~=1) = -1;
-    end
-end
 
 % Preallocate
 theta = cell(p.Results.nR,lNN,lNM);
@@ -115,8 +105,8 @@ for r = 1:p.Results.nR
 end
 
 % Write results
-di = 1; while exist(['results_' p.Results.clf '_' p.Results.svnm num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = ['results_' p.Results.clf '_' p.Results.svnm num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_' p.Results.clf '_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_' p.Results.clf '_' num2str(di)];
 disp(['Done. Writing to ' fn]);
 save(fn, 'theta', 'R', 'e', 'post', 'AUC', 'lambda', 'p', 'q');
 

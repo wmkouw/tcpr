@@ -90,15 +90,17 @@ rawNumericColumns(R) = {NaN}; % Replace non-numeric cells
 numIndex = [1,4,15,16,17,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39];
 strIndex = [2,3,5,6,7,8,9,10,11,12,13,14,18,19,40];
 
-%% Allocate imported array to column variable names
-
-A = zeros(size(rawCellColumns));
+A = NaN(size(rawCellColumns));
 for a = 1:size(rawCellColumns,2)
     
    ua = unique(rawCellColumns(:,a));
    for u = 1:length(ua)
        ix = strcmp(rawCellColumns(:,a),ua{u});
-       A(ix,a) = u;
+       if strcmp(ua{u},'?')
+            A(ix,a) = NaN;
+       else
+            A(ix,a) = u;
+       end
    end
 end
 

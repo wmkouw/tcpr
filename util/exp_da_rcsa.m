@@ -1,9 +1,6 @@
 function exp_da_rcsa(X,yX,Z,yZ,varargin)
 % Domain adaptation experiment for Robust Covariate Shift Adjustment
 
-addpath(genpath('../util/minFunc'))
-addpath(genpath('../util/RobustLearning'))
-
 % Parse arguments
 p = inputParser;
 addOptional(p, 'NN', []);
@@ -19,14 +16,17 @@ addOptional(p, 'clip', 100);
 addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'prep', {''});
-addOptional(p, 'svnm', []);
+addOptional(p, 'saveName', []);
 parse(p, varargin{:});
 
 % Shape
 [N,D] = size(X);
 [M,~] = size(Z);
-uy = unique(yX);
-K = numel(uy);
+labels = unique(yX);
+K = numel(labels);
+
+% Binary classification only
+if K>2; error('RCSA code only supports binary classification'); end
 
 % Setup for learning curves
 if ~isempty(p.Results.NN); lNN = length(p.Results.NN); else; lNN = 1; end
@@ -35,14 +35,6 @@ if ~isempty(p.Results.NM); lNM = length(p.Results.NM); else; lNM = 1; end
 % Normalize data to prevent
 X = da_prep(X', p.Results.prep)';
 Z = da_prep(Z', p.Results.prep)';
-
-% Force labels in {-1,+1}
-lab = union(unique(yX),unique(yZ));
-if ~isempty(setdiff(lab,[-1 1]))
-    disp(['Forcing labels into {-1,+1}']);
-    yX(yX~=1) = -1;
-    yZ(yZ~=1) = -1;
-end
 
 % Options
 options.B = p.Results.B;
@@ -61,7 +53,7 @@ R = NaN(p.Results.nR,lNN,lNM);
 AUC = NaN(p.Results.nR,lNN,lNM);
 pred = cell(p.Results.nR,lNN,lNM);
 post = cell(p.Results.nR,lNN,lNM);
-w = cell(p.Results.nR,lNN,lNM);
+iw = cell(p.Results.nR,lNN,lNM);
 alpha = cell(p.Results.nR,lNN,lNM);
 for m = 1:lNM
     for n = 1:lNN
@@ -147,34 +139,34 @@ for m = 1:lNM
             end
             
             % Learn Robust model (RSCA)
-            [theta{r,n,m},alpha{r,n,m},w{r,n,m}] = robust_learn(X(ixNN,:), Z(ixNM,:), Xref, yX(ixNN), [], options);
+            [theta{r,n,m},alpha{r,n,m},iw{r,n,m}] = robust_learn(X(ixNN,:), Z(ixNM,:), Xref, yX(ixNN), [], options);
             
             % Test kernel
             KZX = options.kernel(Z(ixNM,:),X(ixNN,:),options.sigma);
             KZXth = KZX*theta{r,n,m}(1:end-1) + theta{r,n,m}(end);
             
+            % Risk with hinge loss
+            R(r,n,m) = mean(max(0, 1 - KZXth.*yZ(ixNM)),1);
+            
             % Predictions
             pred{r,n,m} = sign(KZXth);
-            
-            % Risk with hinge loss
-            R(r,n,m) = mean(max(0, 1 - pred{r,n,m}.*yZ(ixNM)),1);
             
             % Errors
             e(r,n,m) = mean(pred{r,n,m}~=yZ,1);
             
-            % Posteriors
-            post{r,n,m} = exp(KZXth)./(1 + exp(KZXth));
+            % Posterior for positive class
+            post{r,n,m} = exp(KZXth)./(exp(-KZXth) + exp( KZXth));
             
             % AUC
-            [~,~,~,AUC(r,n,m)] = perfcurve(yZ(ixNM),post{r,n,m},1);
+            [~,~,~,AUC(r,n,m)] = perfcurve(yZ(ixNM),post{r,n,m},+1);
         end
     end
 end
 
 % Write results
-di = 1; while exist(['results_rcsa_' p.Results.svnm num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = ['results_rcsa_' p.Results.svnm num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_rcsa_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_rcsa_' num2str(di)];
 disp(['Done. Writing to ' fn]);
-save(fn, 'theta', 'R', 'e', 'pred', 'post', 'AUC', 'lambda', 'p', 'w', 'alpha');
+save(fn, 'theta', 'R', 'e', 'pred', 'post', 'AUC', 'lambda', 'p', 'iw', 'alpha');
 
 end

@@ -5,7 +5,7 @@ function exp_da_tca(X,yX,Z,yZ,varargin)
 p = inputParser;
 addOptional(p, 'NN', []);
 addOptional(p, 'NM', []);
-addOptional(p, 'nC', 3);
+addOptional(p, 'nC', 10);
 addOptional(p, 'nR', 1);
 addOptional(p, 'nF', 5);
 addOptional(p, 'maxIter', 500);
@@ -13,7 +13,7 @@ addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'prep', {''});
 addOptional(p, 'lambda', 0);
 addOptional(p, 'alpha', 1);
-addOptional(p, 'svnm', []);
+addOptional(p, 'saveName', []);
 addOptional(p, 'viz', false);
 addOptional(p, 'gif', false);
 parse(p, varargin{:});
@@ -84,8 +84,8 @@ for r = 1:p.Results.nR
 end
 
 % Write results
-di = 1; while exist(['results_tca_' p.Results.svnm num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = ['results_tca_' p.Results.svnm num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_tca_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_tca_' num2str(di)];
 disp(['Done. Writing to ' fn]);
 save(fn, 'theta', 'R', 'e', 'post', 'AUC', 'lambda', 'p', 'P');
 

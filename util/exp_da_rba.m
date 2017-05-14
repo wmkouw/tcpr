@@ -10,18 +10,20 @@ addOptional(p, 'nF', 5);
 addOptional(p, 'gamma', 1);
 addOptional(p, 'lambda', 1);
 addOptional(p, 'clip', 1000);
-addOptional(p, 'iwe', 'kliep')
+addOptional(p, 'iwe', 'kmm')
 addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'prep', {''});
-addOptional(p, 'svnm', []);
+addOptional(p, 'saveName', []);
 parse(p, varargin{:});
 
-% Setup for learning curves
+% Shapes
 [N,~] = size(X);
 [M,~] = size(Z);
 if ~isempty(p.Results.NN); lNN = length(p.Results.NN); else; lNN = 1; end
 if ~isempty(p.Results.NM); lNM = length(p.Results.NM); else; lNM = 1; end
+labels = unique(yX)';
+K = numel(labels);
 
 % Normalize data to prevent
 X = da_prep(X', p.Results.prep)';
@@ -34,7 +36,7 @@ R = NaN(p.Results.nR,lNN,lNM);
 AUC = NaN(p.Results.nR,lNN,lNM);
 pred = cell(p.Results.nR,lNN,lNM);
 post = cell(p.Results.nR,lNN,lNM);
-w = cell(p.Results.nR,lNN,lNM);
+iw = cell(p.Results.nR,lNN,lNM);
 for m = 1:lNM
     for n = 1:lNN
         for r = 1:p.Results.nR
@@ -66,7 +68,8 @@ for m = 1:lNM
                         
                         % Evaluate on held-out source folds (log-loss)
                         for j = 1:size(Xa,1)
-                            R_la(la) = R_la(la) + (-Xa(j,:)*theta_f(yXf(j),:)' + log(sum(exp(Xa(j,:)*theta_f'))));
+                            [~,yi] = max(yXf(j)==labels,[],2);
+                            R_la(la) = R_la(la) + (-Xa(j,:)*theta_f(yi,:)' + log(sum(exp(Xa(j,:)*theta_f'))));
                         end                        
                         R_la(la) = R_la(la)./size(Xa,1);
                     end
@@ -82,16 +85,16 @@ for m = 1:lNM
             disp(['\lambda = ' num2str(lambda)]);
             
             % Call classifier and evaluate
-            [theta{r,n,m},w{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = rba(X(ixNN,:),yX(ixNN),Z(ixNM,:),'yZ', yZ(ixNM), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', lambda, 'clip', p.Results.clip, 'iwe', p.Results.iwe);
+            [theta{r,n,m},iw{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = rba(X(ixNN,:),yX(ixNN),Z(ixNM,:),'yZ', yZ(ixNM), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', lambda, 'clip', p.Results.clip, 'iwe', p.Results.iwe);
             
         end
     end
 end
 
 % Write results
-di = 1; while exist(['results_rba_' p.Results.svnm num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = ['results_rba_' p.Results.svnm num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_rba_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_rba_' num2str(di)];
 disp(['Done. Writing to ' fn]);
-save(fn, 'theta', 'R','w','e', 'pred', 'post', 'AUC','p','w');
+save(fn, 'theta', 'R','e', 'pred', 'post', 'AUC','p','iw');
 
 end

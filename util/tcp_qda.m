@@ -73,9 +73,6 @@ ll_ref = ll_qda(pi_ref,mu_ref,Si_ref,Z);
 q = ones(M,K)./K;
 
 % Initialize mcpl estimates
-pi_tcp = pi_ref;
-mu_tcp = mu_ref;
-Si_tcp = Si_ref;
 llmm = Inf;
 disp('Starting MCPL optimization');
 for n = 1:p.Results.maxIter
@@ -130,7 +127,7 @@ for n = 1:p.Results.maxIter
     q = q - lr.*Dq;
     
     % Project back onto simplex
-    q = myprojsplx(q);
+    q = projsplx(q);
     
     %%% Check progress
     if rem(n,1e2)==1
