@@ -52,7 +52,7 @@ y(strcmp(dataArray{:,end-1},'b'),1) = -1;
 D(:,2) = [];
 
 if p.Results.save
-    save('ionosphere.mat', 'D','y');
+    save('iono.mat', 'D','y');
 end
 
 
