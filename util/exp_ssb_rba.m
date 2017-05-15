@@ -13,16 +13,14 @@ addOptional(p, 'nR', 1);
 addOptional(p, 'nF', 5);
 addOptional(p, 'gamma', 1);
 addOptional(p, 'lambda', 1);
-addOptional(p, 'clip', 100);
-addOptional(p, 'iwe', 'kliep')
+addOptional(p, 'clip', 1e5);
+addOptional(p, 'iwe', 'kmm')
 addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
-addOptional(p, 'prep', {''});
-addOptional(p, 'svnm', []);
+addOptional(p, 'ssb', 'sdw');
+addOptional(p, 'saveName', []);
+addOptional(p, 'viz', false);
 parse(p, varargin{:});
-
-% Normalize data
-D = da_prep(D, p.Results.prep);
 
 % Number of sample sizes
 lNN = length(p.Results.nN);
@@ -34,12 +32,12 @@ end
 
 % Preallocate
 theta = cell(p.Results.nR,lNN,lNM);
-w = cell(p.Results.nR,lNN,lNM);
 e = NaN(p.Results.nR,lNN,lNM);
 R = NaN(p.Results.nR,lNN,lNM);
+AUC = NaN(p.Results.nR,lNN,lNM);
 pred = cell(p.Results.nR,lNN,lNM);
 post = cell(p.Results.nR,lNN,lNM);
-AUC = NaN(p.Results.nR,lNN,lNM);
+iw = cell(p.Results.nR,lNN,lNM);
 
 for r = 1:p.Results.nR
     disp(['Running repeat ' num2str(r) '/' num2str(p.Results.nR)]);
@@ -47,7 +45,14 @@ for r = 1:p.Results.nR
     for n = 1:lNN
         
         % Select samples
-        ix = ssb_nhg(D,y,p.Results.nN(n), 'loc', 'edge', 'type', 'Gaussian', 'viz', false);
+        switch p.Results.ssb
+            case 'nn'
+                ix = ssb_nn(D,y,p.Results.nN(n), 'viz', p.Results.viz);
+            case 'sdw'
+                ix = ssb_sdw(D,y,p.Results.nN(n), 'viz', p.Results.viz);
+            otherwise
+                error(['Selection bias type ' p.Results.ssb ' unknown']);
+        end
         
         % Select source
         X = D(ix,:);
@@ -81,15 +86,15 @@ for r = 1:p.Results.nR
                 for la = 1:length(Lambda)
                     
                     % Split folds
-                    ixFo = randsample(1:p.Results.nF, length(ixNN), true);
+                    ixf = randsample(1:p.Results.nF, p.Results.nN(n), true);
                     for f = 1:p.Results.nF
                         
                         % Train on included folds
-                        theta_f = rba(X(ixFo~=f,:),yX(ixFo~=f),Z(ixnM,:), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', Lambda(la), 'clip', p.Results.clip, 'iwe', p.Results.iwe);
+                        theta_f = rba(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', Lambda(la), 'clip', p.Results.clip, 'iwe', p.Results.iwe);
                         
-                        % Evaluate on held-out source folds (MSE)
-                        Xa = [X(ixFo==f,:) ones(length(ixFo==f),1)];
-                        yXf = yX(ixFo==f);
+                        % Evaluate on held-out source folds (-ALL)
+                        Xa = [X(ixf==f,:) ones(length(ixf==f),1)];
+                        yXf = yX(ixf==f);
                         for j = 1:size(Xa,1)
                             R_la(la) = R_la(la) + (-Xa(j,:)*theta_f(yXf(j),:)' + log(sum(exp(Xa(j,:)*theta_f'))));
                         end
@@ -106,16 +111,16 @@ for r = 1:p.Results.nR
             disp(['\lambda = ' num2str(lambda)]);
             
             % Call classifier and evaluate
-            [theta{r,n,m},w{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = rba(X,yX,Z(ixnM,:), 'yZ', yZ(ixnM), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', lambda, 'clip', p.Results.clip, 'iwe', p.Results.iwe);
+            [theta{r,n,m},iw{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = rba(X,yX,Z(ixnM,:), 'yZ', yZ(ixnM), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', lambda, 'clip', p.Results.clip, 'iwe', p.Results.iwe);
             
         end
     end
 end
 
 % Write results
-di = 1; while exist(['results_rba_' p.Results.svnm num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = ['results_rba_' p.Results.svnm num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_ssb_rba_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_ssb_rba_' num2str(di)];
 disp(['Done. Writing to ' fn]);
-save(fn, 'theta', 'R','w','e', 'pred', 'post', 'AUC','p');
+save(fn, 'theta', 'R','iw','e', 'pred', 'post', 'AUC','p');
 
 end

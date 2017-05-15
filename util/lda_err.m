@@ -2,7 +2,8 @@ function [err,pred,post,AUC] = lda_err(pi_k, mu_k, Si, X,y)
 % Function to compute LDA error rate
 
 % Data shape
-K = length(pi_k);
+labels = unique(y)';
+K = numel(labels);
 [N,~] = size(X);
 
 pk = zeros(N,K);
@@ -13,13 +14,14 @@ post = pk./sum(pk,2,'omitnan');
 
 % Compute mean classification error
 [~,pred] = max(post, [], 2);
-err = mean(pred~=y);
+err = mean(labels(pred)'~=y);
 
 % Compute AUC
-if numel(unique(y))==1
-    AUC = NaN;
+if K==2
+    [~,~,~,AUC] = perfcurve(y,post(:,2),+1);
 else
-    [~,~,~,AUC] = perfcurve(y,post(:,1),1);
+    AUC = NaN;
+    disp('No AUC - K ~=2');    
 end
 
 end

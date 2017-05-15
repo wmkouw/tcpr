@@ -1,37 +1,38 @@
-function exp_da_tca(X,yX,Z,yZ,varargin)
-% Domain adaptation experiment for Transfer Component Analysis
+function exp_ssb_tca(D,y,varargin)
+% Sample selection bias experiment for Transfer Component Analysis
+
+% Size
+[M,~] = size(D);
 
 % Parse arguments
 p = inputParser;
-addOptional(p, 'NN', []);
-addOptional(p, 'NM', []);
-addOptional(p, 'nC', 10);
+addOptional(p, 'nN', min(10, round(M./2)));
+addOptional(p, 'nM', M);
+addOptional(p, 'setDiff', false);
+addOptional(p, 'nC', 5);
 addOptional(p, 'nR', 1);
 addOptional(p, 'nF', 5);
+addOptional(p, 'mu', 1/2);
+addOptional(p, 'lambda', 1);
+addOptional(p, 'sigma', 1);
+addOptional(p, 'ssb', 'sdw');
 addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
-addOptional(p, 'prep', {''});
-addOptional(p, 'lambda', 0);
-addOptional(p, 'mu', 1);
-addOptional(p, 'sigma', 1);
 addOptional(p, 'saveName', []);
 addOptional(p, 'viz', false);
-addOptional(p, 'gif', false);
 parse(p, varargin{:});
 
-% Setup for learning curves
-[N,~] = size(X);
-[M,~] = size(Z);
-if ~isempty(p.Results.NN); lNN = length(p.Results.NN); else; lNN = 1; end
-if ~isempty(p.Results.NM); lNM = length(p.Results.NM); else; lNM = 1; end
+% Number of sample sizes
+lNN = length(p.Results.nN);
+if isempty(p.Results.nM)
+    lNM = 1;
+else
+    lNM = length(p.Results.nM);
+end
 
 % Labels
-labels = unique(yX);
+labels = unique(y);
 K = numel(labels);
-
-% Normalize data
-X = da_prep(X, p.Results.prep);
-Z = da_prep(Z, p.Results.prep);
 
 % Preallocate
 theta = cell(p.Results.nR,lNN,lNM);
@@ -41,15 +42,43 @@ AUC = NaN(p.Results.nR,lNN,lNM);
 pred = cell(p.Results.nR,lNN,lNM);
 post = cell(p.Results.nR,lNN,lNM);
 P = cell(p.Results.nR,lNN,lNM);
+
 for r = 1:p.Results.nR
     disp(['Running repeat ' num2str(r) '/' num2str(p.Results.nR)]);
     
     for n = 1:lNN
+        
+        % Select samples
+        switch p.Results.ssb
+            case 'nn'
+                ix = ssb_nn(D,y,p.Results.nN(n), 'viz', p.Results.viz);
+            case 'sdw'
+                ix = ssb_sdw(D,y,p.Results.nN(n), 'viz', p.Results.viz);
+            otherwise
+                error(['Selection bias type ' p.Results.ssb ' unknown']);
+        end
+        
+        % Select source
+        X = D(ix,:);
+        yX = y(ix);
+        
+        % Select target
+        if p.Results.setDiff
+            Z = D(setdiff(1:M,ix),:);
+            yZ = y(setdiff(1:M,ix));
+        else
+            Z = D;
+            yZ = y;
+        end
+        
         for m = 1:lNM
             
-            % Select increasing amount of source and target samples
-            if ~isempty(p.Results.NN); ixNN = randsample(1:N, p.Results.NN(n), false); else; ixNN = 1:N; end
-            if ~isempty(p.Results.NM); ixNM = randsample(1:M, p.Results.NM(m), false); else; ixNM = 1:M; end
+            % Select target samples
+            if ~isempty(p.Results.nM)
+                ixNM = randsample(1:M, p.Results.nM(m), false);
+            else
+                ixNM = 1:size(Z,1);
+            end
             
             % Cross-validate regularization parameter
             if isempty(p.Results.lambda)
@@ -61,11 +90,11 @@ for r = 1:p.Results.nR
                 for la = 1:length(Lambda)
                     
                     % Split folds
-                    ixFo = randsample(1:p.Results.nF, length(ixNN), true);
+                    ixf = randsample(1:p.Results.nF, length(ixNN), true);
                     for f = 1:p.Results.nF
                         
                         % Train on included folds
-                        theta_f = tca(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'nC', p.Results.nC, 'mu', p.Results.mu, 'l2', Lambda(la), 'sigma', p.Results.sigma);
+                        theta_f = tca(X(ixf~=f,:),yX(ixf~=f),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'nC', p.Results.nC, 'l2', Lambda(la));
                         
                         % Evaluate on held-out source folds (error)
                         lf = sum(ixFo==f);
@@ -84,15 +113,15 @@ for r = 1:p.Results.nR
             disp(['\lambda = ' num2str(lambda)]);
             
             % Call classifier and evaluate
-            [theta{r,n,m},P{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = tca(X(ixNN,:), yX(ixNN), Z(ixNM,:),'yZ', yZ(ixNM),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'nC', p.Results.nC, 'mu', p.Results.mu, 'sigma', p.Results.sigma, 'l2', lambda);
+            [theta{r,n,m},P{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = tca(X, yX, Z(ixNM,:),'yZ', yZ(ixNM),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'nC', p.Results.nC, 'sigma', p.Results.sigma, 'l2', lambda);
         end
     end
 end
 
 % Write results
-di = 1; while exist([p.Results.saveName 'results_da_tca_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = [p.Results.saveName 'results_da_tca_' num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_ssb_tca_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_ssb_tca_' num2str(di)];
 disp(['Done. Writing to ' fn]);
-save(fn, 'theta', 'R', 'e', 'post', 'AUC', 'lambda', 'p', 'P');
+save(fn, 'theta', 'R','e', 'pred', 'post', 'AUC','p', 'P');
 
 end

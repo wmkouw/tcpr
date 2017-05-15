@@ -1,23 +1,26 @@
-function [theta,varargout] = iwc(X,yX,Z,varargin)
+function [theta,iw,varargout] = iwc(X,yX,Z,varargin)
 % Function to run an importance weighted classifier
 % Input:    X       source data (N samples x D features)
 %           Z       target data (M samples x D features)
 %           yX      source labels (N x 1)
 % Optional:
 %           yZ      target labels (M x 1)
-%           lambda  Regularization parameters (default: 1e-3)
-%           iwe     Choice of importance weight estimation method (default: 'log')
-%           clf     Choice of loss function (default: 'lsq')
+%           lambda  regularization parameters
+%           iwe     importance weight estimation method
+%           sigma   kernel bandwidth for importance-weight estimator
+%           gamma   regularization for importance-weight estimator
+%           clf     loss function
+%           clip    maximum importance weight value
 %
 % Output:
 % 			theta   target model estimate
+%           iw      importance-weights
 % Optional output:
-%           {1}     found importance weights w
-%           {2}   	target risk R(Z,yZ)
-% 			{3} 	target error
-%           {4}     target predictions
-%           {5}     target posteriors
-%           {6}     target AUC
+%           {1}   	target risk R(Z,yZ)
+% 			{2} 	target error
+%           {3}     target predictions
+%           {4}     target posteriors
+%           {5}     target AUC
 %
 % Wouter M. Kouw
 % Last update: 2017-01-31
@@ -26,8 +29,9 @@ function [theta,varargout] = iwc(X,yX,Z,varargin)
 p = inputParser;
 addOptional(p, 'yZ', []);
 addOptional(p, 'lambda', 0);
-addOptional(p, 'sigma', 1);
 addOptional(p, 'iwe', 'kmm');
+addOptional(p, 'gamma', 0);
+addOptional(p, 'sigma', 1);
 addOptional(p, 'clf', 'lsq');
 addOptional(p, 'maxIter', 1e3);
 addOptional(p, 'xTol', 1e-5);
@@ -39,15 +43,16 @@ if ~all(X(:,end)==1); X = [X ones(size(X,1),1)]; end
 if ~all(Z(:,end)==1); Z = [Z ones(size(Z,1),1)]; end
 
 % Data shape
-K = numel(unique(yX));
+labels = unique(yX);
+K = numel(labels);
 if K>2; error('Binary classification only'); end
 
 % Estimate importance weights
 switch p.Results.iwe
     case 'kmm'
-        iw = iwe_kmm(X,Z, 'theta', p.Results.sigma, 'mD', 'se', ...
+        iw = iwe_kmm(X(:,1:end-1),Z(:,1:end-1), 'theta', p.Results.sigma, 'mD', 'se', ...
             'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, ...
-            'gamma', 1e-3);
+            'gamma', p.Results.gamma);
 end
 
 % Clip the inverse weights
@@ -97,21 +102,18 @@ if nargout > 1
                 end
                 
             case 'lr'
-                % Set labels
-                yZ(yZ~=1) = 0;
                 
                 % Risk = average negative log-likelihood (-ALL)
-                R = mean(-yZ.*(Z*theta) + log(1 + exp(Z*theta)),1);
+                R = mean(-yZ.*(Z*theta) + log(exp(-Z*theta) + exp(Z*theta)),1);
                 
                 % Posteriors
-                post = exp(Z*theta)./(1 + exp(Z*theta));
+                post = exp(Z*theta)./(exp(-Z*theta) + exp(Z*theta));
                 
                 % Predictions
                 pred = sign(Z*theta); 
                 
                 % Errors
-                pred(pred==-1) = 0;
-                e = mean(pred~=yZ);
+                e = mean(pred ~= yZ);
                 
                 % Compute AUC
                 if K==2
@@ -124,15 +126,12 @@ if nargout > 1
         end
         
         % Output
-        varargout{2} = R;
-        varargout{3} = e;
-        varargout{4} = pred;
-        varargout{5} = post;
-        varargout{6} = AUC;
+        varargout{1} = R;
+        varargout{2} = e;
+        varargout{3} = pred;
+        varargout{4} = post;
+        varargout{5} = AUC;
     end
-    
-    % Output
-    varargout{1} = iw;
 end
 
 

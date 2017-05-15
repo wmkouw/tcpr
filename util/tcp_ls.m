@@ -41,15 +41,8 @@ labels = unique(yX);
 K = numel(labels);
 if K~=2; error('Binary classification only'); end
 
-% Force source labels in {-1,+1}
-if ~isempty(setdiff(labels,[-1 1]))
-    disp(['Forcing labels into {-1,+1}']);
-    yX(yX~=1) = -1;
-    labels = [-1 1];
-end
-
 % Reference parameter estimates
-theta.ref = (X'*X + p.Results.lambda*N*eye(D))\(X'*yX);
+theta.ref = (X'*X + p.Results.lambda*eye(D))\(X'*yX);
 
 % Initialize
 q = ones(M,K)./K;
@@ -63,9 +56,7 @@ for n = 1:p.Results.maxIter
     %%% Minimization
     
     % Closed-form minimization w.r.t. theta
-    ZZ = svdinv(Z'*Z + p.Results.lambda*M*eye(D));
-    [~,psd] = chol(ZZ); if psd>0; disp('target covariance not psd'); end
-    theta.tcp = ZZ*(Z'*(labels(1)*q(:,1) + labels(2)*q(:,2)));
+    theta.tcp = (Z'*Z + p.Results.lambda*eye(D))\(Z'*(labels(1)*q(:,1) + labels(2)*q(:,2)));
     
     %%% Maximization
     
@@ -116,7 +107,7 @@ for n = 1:p.Results.maxIter
 end
 
 % Oracle parameter estimates
-theta.orc = (Z'*Z + p.Results.lambda*M*eye(D))\(Z'*p.Results.yZ);
+theta.orc = (Z'*Z + p.Results.lambda*eye(D))\(Z'*p.Results.yZ);
 
 %%% Optional output
 if nargout > 1

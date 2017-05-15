@@ -60,7 +60,7 @@ switch p.Results.clf
     case 'rcsa'
         exp_ssb_rcsa(D,y, 'nN', p.Results.nN, 'nM', p.Results.nM, 'setDiff', p.Results.setDiff, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))} '_nR' num2str(p.Results.nR) '_'], 'useGamma', p.Results.useGamma, 'lambda', p.Results.lambda);
     case 'tca'
-        exp_ssb_tca(D,y, 'nN', p.Results.nN, 'nM', p.Results.nM, 'setDiff', p.Results.setDiff, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))} '_nR' num2str(p.Results.nR) '_'], 'mu', p.Results.mu, 'nC', p.Results.nC, 'lambda', p.Results.lambda, 'gamma', p.Results.gamma);
+        exp_ssb_tca(D,y, 'nN', p.Results.nN, 'nM', p.Results.nM, 'setDiff', p.Results.setDiff, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))} '_nR' num2str(p.Results.nR) '_'], 'mu', p.Results.mu, 'nC', p.Results.nC, 'lambda', p.Results.lambda, 'sigma', p.Results.sigma);
     otherwise
         disp(['Classifier not recognized']);
 end

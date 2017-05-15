@@ -18,23 +18,17 @@ addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'prep', {''});
 addOptional(p, 'lambda', 0);
 addOptional(p, 'alpha', 2);
-addOptional(p, 'svnm', []);
-addOptional(p, 'ssb', 'nn');
+addOptional(p, 'saveName', []);
+addOptional(p, 'ssb', 'sdw');
 addOptional(p, 'viz', false);
 parse(p, varargin{:});
 
 % Normalize data
 D = da_prep(D, p.Results.prep);
 
-if strcmp(p.Results.clf, 'tcp-ls')
-    % Force labels in {-1,+1}
-    lab = unique(y);
-    if ~isempty(setdiff(lab,[-1 1]))
-        disp(['Forcing labels into {-1,+1}']);
-        y(y~=1) = -1;
-    end
-    lab = unique(y);
-end
+% Check labels
+labels = unique(y)';
+K = numel(labels);
 
 % Number of sample sizes
 lNN = length(p.Results.nN);
@@ -46,12 +40,12 @@ end
 
 % Preallocation
 theta = cell(p.Results.nR,lNN,lNM);
-q = cell(p.Results.nR,lNN,lNM);
 e = cell(p.Results.nR,lNN,lNM);
 R = cell(p.Results.nR,lNN,lNM);
+AUC = cell(p.Results.nR,lNN,lNM);
 pred = cell(p.Results.nR,lNN,lNM);
 post = cell(p.Results.nR,lNN,lNM);
-AUC = cell(p.Results.nR,lNN,lNM);
+q = cell(p.Results.nR,lNN,lNM);
 
 for r = 1:p.Results.nR
     disp(['Running repeat ' num2str(r) '/' num2str(p.Results.nR)]);
@@ -60,14 +54,10 @@ for r = 1:p.Results.nR
         
         % Select samples
         switch p.Results.ssb
-            case 'nhg'
-                ix = ssb_nhg(D,y,p.Results.nN(n), 'loc', 'edge', 'type', 'T', 'viz', p.Results.viz);
             case 'nn'
                 ix = ssb_nn(D,y,p.Results.nN(n), 'viz', p.Results.viz);
-            case 'ax'
-                ix = ssb_ax(D,y,p.Results.nN(n), 'viz', p.Results.viz);
-            case 'ur'
-                ix = ssb_ur(D,y,p.Results.nN(n), 'viz', p.Results.viz);
+            case 'sdw'
+                ix = ssb_sdw(D,y,p.Results.nN(n), 'viz', p.Results.viz);
             otherwise
                 error(['Selection bias type ' p.Results.ssb ' unknown']);
         end
@@ -104,28 +94,28 @@ for r = 1:p.Results.nR
                 for la = 1:length(Lambda)
                     
                     % Split folds
-                    ixFo = randsample(1:p.Results.nF, p.Results.nN(n), true);
+                    ixf = randsample(1:p.Results.nF, p.Results.nN(n), true);
                     for f = 1:p.Results.nF
                         
                         switch p.Results.clf
                             case 'tcp-ls'
                                 % Train on included folds
-                                theta_f = tcp_ls(X(ixFo~=f,:),yX(ixFo~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
+                                theta_f = tcp_ls(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (MSE)
-                                R_la(la) = mean(([X(ixFo==f,:) ones(length(ixFo==f),1)]*theta_f.mcpl - yX(ixFo==f)).^2);
+                                R_la(la) = mean(([X(ixf==f,:) ones(length(ixf==f),1)]*theta_f.mcpl - yX(ixf==f)).^2);
                             case 'tcp-lda'
                                 % Train on included folds
-                                theta_f = tcp_lda(X(ixFo~=f,:),yX(ixFo~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
+                                theta_f = tcp_lda(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (-ALL)
-                                R_la(la) = R_la(la) - sum(sum(ll_lda(theta_f.mcpl{1}, theta_f.mcpl{2}, theta_f.mcpl{3}, X(ixFo==f,:), yX(ixFo==f)),2),1)./sum(ixFo==f);
+                                R_la(la) = R_la(la) - sum(sum(ll_lda(theta_f.mcpl{1}, theta_f.mcpl{2}, theta_f.mcpl{3}, X(ixf==f,:), yX(ixf==f)),2),1)./sum(ixf==f);
                             case 'tcp-qda'
                                 % Train on included folds
-                                theta_f = tcp_qda(X(ixFo~=f,:),yX(ixFo~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
+                                theta_f = tcp_qda(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (-ALL)
-                                R_la(la) = R_la(la) - sum(sum(ll_qda(theta_f.mcpl{1}, theta_f.mcpl{2}, theta_f.mcpl{3}, X(ixFo==f,:), yX(ixFo==f)),2),1)./sum(ixFo==f);
+                                R_la(la) = R_la(la) - sum(sum(ll_qda(theta_f.mcpl{1}, theta_f.mcpl{2}, theta_f.mcpl{3}, X(ixf==f,:), yX(ixf==f)),2),1)./sum(ixf==f);
                         end
                     end
                 end
@@ -144,20 +134,24 @@ for r = 1:p.Results.nR
                     % Train on source set and test on target set
                     [theta{r,n,m},q{r,n,m},R{r,n,m},e{r,n,m},pred{r,n,m},post{r,n,m},AUC{r,n,m}] = tcp_ls(X,yX,Z(ixnM,:), 'yZ', yZ(ixnM),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', lambda, 'lr', p.Results.lr);
                     
+                    Dt_t = [D ones(M,1)]*theta{r,n,m}.tcp;
+                    Dt_r = [D ones(M,1)]*theta{r,n,m}.ref;
+                    Dt_o = [D ones(M,1)]*theta{r,n,m}.orc;
+                    
                     % Measure on full set
-                    R{r,n,m}.tcp_a = mean((D*theta{r,n,m}.tcp - y).^2,1);
-                    R{r,n,m}.ref_a = mean((D*theta{r,n,m}.ref - y).^2,1);
-                    R{r,n,m}.orc_a = mean((D*theta{r,n,m}.orc - y).^2,1);
+                    R{r,n,m}.tcp_a = mean((Dt_t - y).^2,1);
+                    R{r,n,m}.ref_a = mean((Dt_r - y).^2,1);
+                    R{r,n,m}.orc_a = mean((Dt_o - y).^2,1);
                     
                     % Posteriors
-                    post{r,n,m}.tcp_a = exp(D*theta{r,n,m}.tcp)./(exp(-D*theta{r,n,m}.tcp) + exp(D*theta{r,n,m}.tcp));
-                    post{r,n,m}.ref_a = exp(D*theta{r,n,m}.ref)./(exp(-D*theta{r,n,m}.ref) + exp(D*theta{r,n,m}.ref));
-                    post{r,n,m}.orc_a = exp(D*theta{r,n,m}.orc)./(exp(-D*theta{r,n,m}.orc) + exp(D*theta{r,n,m}.orc));
+                    post{r,n,m}.tcp_a = exp(Dt_t)./(exp(-Dt_t) + exp(Dt_t));
+                    post{r,n,m}.ref_a = exp(Dt_r)./(exp(-Dt_r) + exp(Dt_r));
+                    post{r,n,m}.orc_a = exp(Dt_o)./(exp(-Dt_o) + exp(Dt_o));
                     
                     % Predictions
-                    pred{r,n,m}.tcp_a = sign(D*theta{r,n,m}.tcp);
-                    pred{r,n,m}.ref_a = sign(D*theta{r,n,m}.ref);
-                    pred{r,n,m}.orc_a = sign(D*theta{r,n,m}.orc);
+                    pred{r,n,m}.tcp_a = sign(Dt_t);
+                    pred{r,n,m}.ref_a = sign(Dt_r);
+                    pred{r,n,m}.orc_a = sign(Dt_o);
                     
                     % Error on true labeling
                     e{r,n,m}.tcp_a = mean(pred{r,n,m}.tcp_a ~= y);
@@ -168,6 +162,7 @@ for r = 1:p.Results.nR
                     [~,~,~,AUC{r,n,m}.tcp_a] = perfcurve(y,post{r,n,m}.tcp_a,+1);
                     [~,~,~,AUC{r,n,m}.ref_a] = perfcurve(y,post{r,n,m}.ref_a,+1);
                     [~,~,~,AUC{r,n,m}.orc_a] = perfcurve(y,post{r,n,m}.orc_a,+1);
+                    
                 case 'tcp-lda'
                     % Train on source set and test on target set
                     [theta{r,n,m},q{r,n,m},R{r,n,m},e{r,n,m},pred{r,n,m},post{r,n,m},AUC{r,n,m}] = tcp_lda(X,yX,Z(ixnM,:), 'yZ', yZ(ixnM),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', lambda, 'lr', p.Results.lr);
@@ -196,8 +191,8 @@ for r = 1:p.Results.nR
 end
 
 % Write results
-di = 1; while exist(['results_' p.Results.clf '_' p.Results.svnm num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = ['results_' p.Results.clf '_' p.Results.svnm num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_ssb_' p.Results.clf '_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_ssb_' p.Results.clf '_' num2str(di)];
 disp(['Done. Writing to ' fn]);
 save(fn, 'theta', 'q','R', 'e', 'post', 'AUC', 'lambda', 'p');
 

@@ -9,6 +9,7 @@ addOptional(p, 'NM', []);
 addOptional(p, 'nR', 1);
 addOptional(p, 'nF', 5);
 addOptional(p, 'lambda', 1);
+addOptional(p, 'gamma', 1);
 addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'saveName', []);
@@ -21,34 +22,15 @@ parse(p, varargin{:});
 [M,~] = size(Z);
 if ~isempty(p.Results.NN); lNN = length(p.Results.NN); else; lNN = 1; end
 if ~isempty(p.Results.NM); lNM = length(p.Results.NM); else; lNM = 1; end
+
+% Labels
 labels = unique(yX);
 K = numel(labels);
-
-% Binary classification only
 if K>2; error('RCSA code only supports binary classification'); end
 
 % Normalize data to prevent
 X = da_prep(X', p.Results.prep)';
 Z = da_prep(Z', p.Results.prep)';
-
-switch p.Results.clf
-    case 'lsq'
-        % Force labels in {-1,+1}
-        lab = union(unique(yX),unique(yZ));
-        if ~isempty(setdiff(lab,[-1 1]))
-            disp(['Forcing labels into {-1,+1}']);
-            yX(yX~=1) = -1;
-            yZ(yZ~=1) = -1;
-        end
-    case 'lr'
-        % Force labels in {0,+1}
-        lab = union(unique(yX),unique(yZ));
-        if ~isempty(setdiff(lab,[0 1]))
-            disp(['Forcing labels into {0,+1}']);
-            yX(yX~=1) = 0;
-            yZ(yZ~=1) = 0;
-        end
-end
 
 % Preallocate
 theta = cell(p.Results.nR,lNN,lNM);
@@ -88,16 +70,16 @@ for r = 1:p.Results.nR
                         switch p.Results.clf
                             case 'lsq'
                                 % Train on included folds
-                                theta_f = iwc(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'lambda', Lambda(la), 'clf', 'lsq', 'iwe', p.Results.iwe);
+                                theta_f = iwc(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'lambda', Lambda(la), 'clf', 'lsq', 'iwe', p.Results.iwe, 'gamma', p.Results.gamma);
                                 
                                 % Evaluate on held-out source folds (MSE)
                                 R_la(la) = mean((Xa*theta_f - yXf).^2,1);
                             case 'lr'
                                 % Train on included folds
-                                theta_f = iwc(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'lambda', Lambda(la), 'clf', 'lr', 'iwe', p.Results.iwe);
+                                theta_f = iwc(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'lambda', Lambda(la), 'clf', 'lr', 'iwe', p.Results.iwe, 'gamma', p.Results.gamma);
                                 
                                 % Evaluate on held-out source folds (log-loss)
-                                R_la(la) = mean(-yXf.*Xa*theta_f + log(1 + exp(Xa*theta_f)),1);
+                                R_la(la) = mean(-yXf.*Xa*theta_f + log(exp(-Xa*theta_f) + exp(Xa*theta_f)),1);
                         end
                     end
                 end
@@ -111,7 +93,7 @@ for r = 1:p.Results.nR
             disp(['\lambda = ' num2str(lambda)]);
             
             % Call classifier and evaluate
-            [theta{r,n,m},iw{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = iwc(X(ixNN,:), yX(ixNN), Z(ixNM,:),'yZ', yZ(ixNM),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'lambda', lambda, 'clf', p.Results.clf, 'iwe', p.Results.iwe);
+            [theta{r,n,m},iw{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = iwc(X(ixNN,:), yX(ixNN), Z(ixNM,:),'yZ', yZ(ixNM),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'lambda', lambda, 'clf', p.Results.clf, 'iwe', p.Results.iwe, 'gamma', p.Results.gamma);
         end
     end
 end

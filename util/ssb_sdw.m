@@ -1,27 +1,46 @@
 function [ix] = ssb_sdw(D,y,N,varargin)
-% Sample selection bias using seedpoint-distance weighing
+% Sample selection bias using seed-distance weighing
 
 % Shuffle seed
 rng('shuffle')
 
 % Parse hyperparameters
 p = inputParser;
+addOptional(p, 'seedLoc', 'min');
 addOptional(p, 'viz', false);
 addOptional(p, 'save', false);
 parse(p, varargin{:});
 
+% Shapes
 [M,F] = size(D);
+
+% Labels
 lab = unique(y);
 K = numel(lab);
 
-% Step 1: randomly sample K objects from each class
-seed = zeros(1,K);
+% Priors
+priors = zeros(1,K);
 for k = 1:K
-    seed(k) = randsample(find(y==lab(k)),1);
+    priors(k) = mean(y==lab(k));
 end
 
-% Compute distances from seeds
-S = eye(F);
+% Take a seed for each class
+seed = zeros(1,K);
+switch p.Results.seedLoc
+    case 'min'
+        norms = sqrt(sum(D.^2,2));
+        for k = 1:K
+            minNorm = min(norms(y==lab(k)));
+            seed(k) = datasample(find(norms==minNorm), 1);
+        end        
+    otherwise
+        for k = 1:K
+            seed(k) = randsample(find(y==lab(k)),1);
+        end
+end
+
+% Compute distances from seeds (negative exponential of Mahalanobis dist)
+S = cov(D);
 dist = zeros(K,M);
 for k = 1:K
     for m = 1:M
@@ -29,27 +48,30 @@ for k = 1:K
     end
 end
 
-% Step 2: Find N/K points from the seed
-Nk = floor((N-K)./K);
-index = zeros(Nk, K);
+% Sample points from each class seed according to priors
+index = [];
 for k = 1:K
-    index(:,k) = datasample(1:M, Nk, 'Replace', false, 'Weights', dist(k,:));
+    yk = find(y==lab(k));
+    Nk = round((N-K).*priors(k));
+    index = [index; datasample(yk, Nk, 'Replace', false, 'Weights', dist(k,yk))];
 end
 
-% Step 3: Uniformly sample N objects from subpopulation
+% Include seeds in index
 ix = [seed(:); index(:)];
 
 if p.Results.viz
-    X = D(ix,:);
+    
+    [~,PC,~] = pca(D);
+    X = PC(ix,:);
     yX = y(ix);
     
     figure()
-    plot(D(:,1),D(:,2),'k.', 'MarkerSize', 10, 'MarkerFaceColor', 'k');
+    plot(PC(:,1),PC(:,2),'k.', 'MarkerSize', 10, 'MarkerFaceColor', 'k');
     hold on;
-    plot(X(yX==1,1),X(yX==1,2),'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r');
-    plot(X(yX==2,1),X(yX==2,2),'bs', 'MarkerSize', 10, 'MarkerFaceColor', 'b');
-    plot(D(seed(1),1),D(seed(1),2),'gh','MarkerSize', 9, 'MarkerFacecolor', 'g');
-    plot(D(seed(2),1),D(seed(2),2),'gh','MarkerSize', 9, 'MarkerFacecolor', 'g');
+    plot(X(yX==lab(1),1),X(yX==lab(1),2),'rs', 'MarkerSize', 10, 'MarkerFaceColor', 'r');
+    plot(X(yX==lab(2),1),X(yX==lab(2),2),'bs', 'MarkerSize', 10, 'MarkerFaceColor', 'b');
+    plot(PC(seed(1),1),PC(seed(1),2),'gh','MarkerSize', 9, 'MarkerFacecolor', 'g');
+    plot(PC(seed(2),1),PC(seed(2),2),'gh','MarkerSize', 9, 'MarkerFacecolor', 'g');
     xlabel('PC1');
     ylabel('PC2');
     set(gcf, 'Color', 'w','Position', [100 100 600 300]);
@@ -57,7 +79,7 @@ if p.Results.viz
     legend({'z', 'x|y=1', 'x|y=2', 'seed'});
     
     if p.Results.save
-        export_fig(gcf, 'ssb_nnw.eps');
+        export_fig(gcf, 'ssb_sdw.eps');
     end
 end
 

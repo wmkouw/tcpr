@@ -33,6 +33,6 @@ end
 bX = bsxfun(@times, w, X);
 
 % Least-squares
-theta = (bX'*bX+p.Results.lambda*N*eye(D))\(bX'*y);
+theta = (bX'*bX+p.Results.lambda*eye(D))\(bX'*y);
         
 end
