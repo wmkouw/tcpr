@@ -105,8 +105,8 @@ for r = 1:p.Results.nR
 end
 
 % Write results
-di = 1; while exist([p.Results.saveName 'results_' p.Results.clf '_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = [p.Results.saveName 'results_' p.Results.clf '_' num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_da_' p.Results.clf '_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_da_' p.Results.clf '_' num2str(di)];
 disp(['Done. Writing to ' fn]);
 save(fn, 'theta', 'R', 'e', 'post', 'AUC', 'lambda', 'p', 'q');
 

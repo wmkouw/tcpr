@@ -164,8 +164,8 @@ for m = 1:lNM
 end
 
 % Write results
-di = 1; while exist([p.Results.saveName 'results_rcsa_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
-fn = [p.Results.saveName 'results_rcsa_' num2str(di)];
+di = 1; while exist([p.Results.saveName 'results_da_rcsa_' num2str(di) '.mat'], 'file')~=0; di = di+1; end
+fn = [p.Results.saveName 'results_da_rcsa_' num2str(di)];
 disp(['Done. Writing to ' fn]);
 save(fn, 'theta', 'R', 'e', 'pred', 'post', 'AUC', 'lambda', 'p', 'iw', 'alpha');
 
