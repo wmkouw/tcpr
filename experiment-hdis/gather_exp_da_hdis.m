@@ -14,7 +14,7 @@ clfs_names = {'tca', 'kmm', 'rcsa', 'rba', 'tcp_ls', 'tcp_lda', 'tcp_qda'};
 cc = 1:12;
 nR = 1;
 no = '1';
-prep = 'minusminmaxdiv';
+prep = 'minusminmaxdivimpute0';
 
 % Number of classifiers and combinations
 nCl = length(clfs);

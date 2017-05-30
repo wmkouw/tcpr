@@ -28,7 +28,7 @@ for i = 1:lP
         case 'maxdiv'
             X = X./max(X(:));
             disp(['Normalized by maximum value: ' num2str(max(X(:)))]);
-        case 'const'
+        case 'constdiv'
             X = X./prep{i+1};
             disp(['Normalized by constant: ' num2str(prep{i+1})]);
         case 'binarize'
@@ -118,6 +118,9 @@ for i = 1:lP
             flist = randsample(1:D,nSel,false);
             X = X(:,flist);
             disp(['Selected features ' num2str(flist)]);
+        case 'impute0'
+            X(isnan(X)) = 0;
+            disp(['Impute missing values with 0']);
         case ''
             disp(['No data preprocessing']);
         otherwise

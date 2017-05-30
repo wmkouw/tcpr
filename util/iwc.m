@@ -13,10 +13,10 @@ function [theta,iw,varargout] = iwc(X,yX,Z,varargin)
 %           clip    maximum importance weight value
 %
 % Output:
-% 			theta   target model estimate
+% 			theta   target model parameter estimate
 %           iw      importance-weights
 % Optional output:
-%           {1}   	target risk R(Z,yZ)
+%           {1}   	target risk
 % 			{2} 	target error
 %           {3}     target predictions
 %           {4}     target posteriors
@@ -38,21 +38,25 @@ addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'clip', 1e5);
 parse(p, varargin{:});
 
+% Check for column vector y
+if ~iscolumn(yX); yX = yX'; end
+
+% Labeling
+labels = unique(yX)';
+K = numel(labels);
+if K>2; error('Binary classification only'); end
+if ~all(labels==[-1 +1]); error('Labels {-1,+1} expected'); end
+
 % Augment data with bias if necessary
 if ~all(X(:,end)==1); X = [X ones(size(X,1),1)]; end
 if ~all(Z(:,end)==1); Z = [Z ones(size(Z,1),1)]; end
 
-% Data shape
-labels = unique(yX);
-K = numel(labels);
-if K>2; error('Binary classification only'); end
-
 % Estimate importance weights
 switch p.Results.iwe
     case 'kmm'
-        iw = iwe_kmm(X(:,1:end-1),Z(:,1:end-1), 'theta', p.Results.sigma, 'mD', 'se', ...
-            'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, ...
-            'gamma', p.Results.gamma);
+        iw = iwe_kmm(X(:,1:end-1),Z(:,1:end-1), ...
+            'theta', p.Results.sigma, 'mD', 'se', 'gamma', p.Results.gamma, ...
+            'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol);
 end
 
 % Clip the inverse weights
@@ -69,69 +73,67 @@ switch p.Results.clf
         error('Reweighted loss function not implemented');
 end
 
-%%% Optional output
-if nargout > 1
+if ~isempty(p.Results.yZ)
     
-    if ~isempty(p.Results.yZ)
-        yZ = p.Results.yZ;
-        
-        % Compute risk
-        switch p.Results.clf
-            case 'lsq'
-                % Set labels
-                yZ(yZ~=1) = -1;
-                
-                % Risk = Mean Squared Error (MSE)
-                R = mean((Z*theta - yZ).^2,1);
-                
-                % Posteriors
-                post = exp(Z*theta)./(exp(-Z*theta) + exp(Z*theta));
-                
-                % Predictions
-                pred = sign(Z*theta);
-                
-                % Errors
-                e = mean(pred~=yZ);
-                
-                % Compute AUC
-                if K==2
-                    [~,~,~,AUC] = perfcurve(yZ,post,+1);
-                else
-                    AUC = NaN;
-                    disp('No AUC - K ~=2');    
-                end
-                
-            case 'lr'
-                
-                % Risk = average negative log-likelihood (-ALL)
-                R = mean(-yZ.*(Z*theta) + log(exp(-Z*theta) + exp(Z*theta)),1);
-                
-                % Posteriors
-                post = exp(Z*theta)./(exp(-Z*theta) + exp(Z*theta));
-                
-                % Predictions
-                pred = sign(Z*theta); 
-                
-                % Errors
-                e = mean(pred ~= yZ);
-                
-                % Compute AUC
-                if K==2
-                    [~,~,~,AUC] = perfcurve(yZ,post,+1);
-                else
-                    AUC = NaN;
-                    disp('No AUC - K ~=2');    
-                end
-                
-        end
-        
-        % Output
-        varargout{1} = R;
-        varargout{2} = e;
-        varargout{3} = pred;
-        varargout{4} = post;
-        varargout{5} = AUC;
+    % Check for same labels
+    yZ = p.Results.yZ;
+    if ~iscolumn(yZ); yZ = yZ'; end
+    if ~all(unique(yZ)'==labels); error('Different source and target labels'); end
+    
+    % Compute risk
+    switch p.Results.clf
+        case 'lsq'
+            
+            % Risk = Mean Squared Error (MSE)
+            R = mean((Z*theta - yZ).^2,1);
+            
+            % Posteriors
+            post = exp(Z*theta)./(exp(-Z*theta) + exp(Z*theta));
+            
+            % Predictions
+            pred = sign(Z*theta);
+            
+            % Errors
+            e = mean(pred~=yZ);
+            
+            % Compute AUC
+            if K==2
+                [~,~,~,AUC] = perfcurve(yZ,post,+1);
+            else
+                AUC = NaN;
+                disp('No AUC - K ~=2');
+            end
+            
+        case 'lr'
+            
+            % Risk = average negative log-likelihood (-ALL)
+            R = mean(-yZ.*(Z*theta) + log(exp(-Z*theta) + exp(Z*theta)),1);
+            
+            % Posteriors
+            post = exp(Z*theta)./(exp(-Z*theta) + exp(Z*theta));
+            
+            % Predictions
+            pred = sign(Z*theta);
+            
+            % Errors
+            e = mean(pred ~= yZ);
+            
+            % Compute AUC
+            if K==2
+                [~,~,~,AUC] = perfcurve(yZ,post,+1);
+            else
+                AUC = NaN;
+                disp('No AUC - K ~=2');
+            end
+            
     end
+    
+    % Output
+    varargout{1} = R;
+    varargout{2} = e;
+    varargout{3} = pred;
+    varargout{4} = post;
+    varargout{5} = AUC;
 end
 
 

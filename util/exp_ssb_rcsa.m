@@ -1,5 +1,11 @@
 function exp_ssb_rcsa(D,y, varargin)
 % Sample selection bias experiment for Robust Covariate Shift Adjustment
+%
+% This experiment script calls code from RobustLearn package from Junfeng Weng's
+% Robust Covariate Shift Adjustment approach
+% Link: https://webdocs.cs.ualberta.ca/~jwen4/codes/RobustLearning.zip
+
+if isempty(which('robust_learn')); error('Add RobustLearn package to path'); end
 
 % Size of dataset
 [M,~] = size(D);
@@ -23,6 +29,15 @@ addOptional(p, 'ssb', 'sdw');
 addOptional(p, 'viz', false);
 addOptional(p, 'saveName', []);
 parse(p, varargin{:});
+
+% Check for column vector y
+if ~iscolumn(y); y = y'; end
+
+% Labeling
+labels = unique(y)';
+K = numel(labels);
+if K>2; error('Binary classification only'); end
+if ~all(labels==[-1 +1]); error('Labels {-1,+1} expected'); end
 
 % Number of sample sizes
 lNN = length(p.Results.nN);

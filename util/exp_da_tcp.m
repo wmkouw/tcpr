@@ -52,7 +52,7 @@ for r = 1:p.Results.nR
                 disp(['Cross-validating for regularization parameter']);
                 
                 % Set range of regularization parameter
-                Lambda = [0 10.^[-6:1:3]];
+                Lambda = [10.^[-6:1:3]];
                 R_la = zeros(1,length(Lambda));
                 for la = 1:length(Lambda)
                     
@@ -66,19 +66,19 @@ for r = 1:p.Results.nR
                                 theta_f = tcp_ls(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (MSE)
-                                R_la(la) = mean(([X(ixNN(ixFo==f),:) ones(length(ixNN(ixFo==f)),1)]*theta_f.mcpl - yX(ixNN(ixFo==f))).^2);
+                                R_la(la) = mean(([X(ixNN(ixFo==f),:) ones(length(ixNN(ixFo==f)),1)]*theta_f.tcp - yX(ixNN(ixFo==f))).^2);
                             case 'tcp-lda'
                                 % Train on included folds
                                 theta_f = tcp_lda(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (-ALL)
-                                R_la(la) = R_la(la) - sum(sum(ll_lda(theta_f.mcpl{1}, theta_f.mcpl{2}, theta_f.mcpl{3}, X(ixNN(ixFo==f),:), yX(ixNN(ixFo==f))),2),1)./sum(ixNN(ixFo==f));
+                                R_la(la) = R_la(la) - sum(sum(ll_lda(theta_f.tcp{1}, theta_f.tcp{2}, theta_f.tcp{3}, X(ixNN(ixFo==f),:), yX(ixNN(ixFo==f))),2),1)./sum(ixNN(ixFo==f));
                             case 'tcp-qda'
                                 % Train on included folds
                                 theta_f = tcp_qda(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (-ALL)
-                                R_la(la) = R_la(la) - sum(sum(ll_qda(theta_f.mcpl{1}, theta_f.mcpl{2}, theta_f.mcpl{3}, X(ixNN(ixFo==f),:), yX(ixNN(ixFo==f))),2),1)./sum(ixNN(ixFo==f));
+                                R_la(la) = R_la(la) - sum(sum(ll_qda(theta_f.tcp{1}, theta_f.tcp{2}, theta_f.tcp{3}, X(ixNN(ixFo==f),:), yX(ixNN(ixFo==f))),2),1)./sum(ixNN(ixFo==f));
                         end
                     end
                 end

@@ -26,7 +26,10 @@ parse(p, varargin{:});
 % Normalize data
 D = da_prep(D, p.Results.prep);
 
-% Check labels
+% Check for column vector y
+if ~iscolumn(y); y = y'; end
+
+% Labeling
 labels = unique(y)';
 K = numel(labels);
 
@@ -89,7 +92,7 @@ for r = 1:p.Results.nR
                 disp(['Cross-validating for regularization parameter']);
                 
                 % Set range of regularization parameter
-                Lambda = [0 10.^[-6:1:3]];
+                Lambda = [10.^[-6:1:3]];
                 R_la = zeros(1,length(Lambda));
                 for la = 1:length(Lambda)
                     
@@ -103,19 +106,19 @@ for r = 1:p.Results.nR
                                 theta_f = tcp_ls(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (MSE)
-                                R_la(la) = mean(([X(ixf==f,:) ones(length(ixf==f),1)]*theta_f.mcpl - yX(ixf==f)).^2);
+                                R_la(la) = mean(([X(ixf==f,:) ones(sum(ixf==f),1)]*theta_f.tcp - yX(ixf==f)).^2);
                             case 'tcp-lda'
                                 % Train on included folds
                                 theta_f = tcp_lda(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (-ALL)
-                                R_la(la) = R_la(la) - sum(sum(ll_lda(theta_f.mcpl{1}, theta_f.mcpl{2}, theta_f.mcpl{3}, X(ixf==f,:), yX(ixf==f)),2),1)./sum(ixf==f);
+                                R_la(la) = R_la(la) - sum(sum(ll_lda(theta_f.tcp{1}, theta_f.tcp{2}, theta_f.tcp{3}, X(ixf==f,:), yX(ixf==f)),2),1)./sum(ixf==f);
                             case 'tcp-qda'
                                 % Train on included folds
                                 theta_f = tcp_qda(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', Lambda(la), 'lr', p.Results.lr);
                                 
                                 % Evaluate on held-out source folds (-ALL)
-                                R_la(la) = R_la(la) - sum(sum(ll_qda(theta_f.mcpl{1}, theta_f.mcpl{2}, theta_f.mcpl{3}, X(ixf==f,:), yX(ixf==f)),2),1)./sum(ixf==f);
+                                R_la(la) = R_la(la) - sum(sum(ll_qda(theta_f.tcp{1}, theta_f.tcp{2}, theta_f.tcp{3}, X(ixf==f,:), yX(ixf==f)),2),1)./sum(ixf==f);
                         end
                     end
                 end
@@ -138,7 +141,7 @@ for r = 1:p.Results.nR
                     Dt_r = [D ones(M,1)]*theta{r,n,m}.ref;
                     Dt_o = [D ones(M,1)]*theta{r,n,m}.orc;
                     
-                    % Measure on full set
+                    % Measure on full set (mean squared error)
                     R{r,n,m}.tcp_a = mean((Dt_t - y).^2,1);
                     R{r,n,m}.ref_a = mean((Dt_r - y).^2,1);
                     R{r,n,m}.orc_a = mean((Dt_o - y).^2,1);
@@ -167,10 +170,10 @@ for r = 1:p.Results.nR
                     % Train on source set and test on target set
                     [theta{r,n,m},q{r,n,m},R{r,n,m},e{r,n,m},pred{r,n,m},post{r,n,m},AUC{r,n,m}] = tcp_lda(X,yX,Z(ixnM,:), 'yZ', yZ(ixnM),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', lambda, 'lr', p.Results.lr);
                     
-                    % Measure on full set
-                    R{r,n,m}.tcp_a = mean(sum(ll_lda(theta{r,n,m}.tcp{1},theta{r,n,m}.tcp{2},theta{r,n,m}.tcp{3},D,y),2),1);
-                    R{r,n,m}.ref_a = mean(sum(ll_lda(theta{r,n,m}.ref{1},theta{r,n,m}.ref{2},theta{r,n,m}.ref{3},D,y),2),1);
-                    R{r,n,m}.orc_a = mean(sum(ll_lda(theta{r,n,m}.orc{1},theta{r,n,m}.orc{2},theta{r,n,m}.orc{3},D,y),2),1);
+                    % Measure on full set (average negative log-likelihood)
+                    R{r,n,m}.tcp_a = mean(-sum(ll_lda(theta{r,n,m}.tcp{1},theta{r,n,m}.tcp{2},theta{r,n,m}.tcp{3},D,y),2),1);
+                    R{r,n,m}.ref_a = mean(-sum(ll_lda(theta{r,n,m}.ref{1},theta{r,n,m}.ref{2},theta{r,n,m}.ref{3},D,y),2),1);
+                    R{r,n,m}.orc_a = mean(-sum(ll_lda(theta{r,n,m}.orc{1},theta{r,n,m}.orc{2},theta{r,n,m}.orc{3},D,y),2),1);
                     [e{r,n,m}.tcp_a, pred{r,n,m}.tcp_a, post{r,n,m}.tcp_a, AUC{r,n,m}.tcp_a] = lda_err(theta{r,n,m}.tcp{1},theta{r,n,m}.tcp{2},theta{r,n,m}.tcp{3},D,y);
                     [e{r,n,m}.ref_a, pred{r,n,m}.ref_a, post{r,n,m}.ref_a, AUC{r,n,m}.ref_a] = lda_err(theta{r,n,m}.ref{1},theta{r,n,m}.ref{2},theta{r,n,m}.ref{3},D,y);
                     [e{r,n,m}.orc_a, pred{r,n,m}.orc_a, post{r,n,m}.orc_a, AUC{r,n,m}.orc_a] = lda_err(theta{r,n,m}.orc{1},theta{r,n,m}.orc{2},theta{r,n,m}.orc{3},D,y);
@@ -178,10 +181,10 @@ for r = 1:p.Results.nR
                     % Train on source set and test on target set
                     [theta{r,n,m},q{r,n,m},R{r,n,m},e{r,n,m},pred{r,n,m},post{r,n,m},AUC{r,n,m}] = tcp_qda(X,yX,Z(ixnM,:), 'yZ', yZ(ixnM),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'alpha', p.Results.alpha, 'lambda', lambda, 'lr', p.Results.lr);
                     
-                    % Measure on full set
-                    R{r,n,m}.tcp_a = mean(sum(ll_qda(theta{r,n,m}.tcp{1},theta{r,n,m}.tcp{2},theta{r,n,m}.tcp{3},D,y),2),1);
-                    R{r,n,m}.ref_a = mean(sum(ll_qda(theta{r,n,m}.ref{1},theta{r,n,m}.ref{2},theta{r,n,m}.ref{3},D,y),2),1);
-                    R{r,n,m}.orc_a = mean(sum(ll_qda(theta{r,n,m}.orc{1},theta{r,n,m}.orc{2},theta{r,n,m}.orc{3},D,y),2),1);
+                    % Measure on full set (average negative log-likelihood)
+                    R{r,n,m}.tcp_a = mean(-sum(ll_qda(theta{r,n,m}.tcp{1},theta{r,n,m}.tcp{2},theta{r,n,m}.tcp{3},D,y),2),1);
+                    R{r,n,m}.ref_a = mean(-sum(ll_qda(theta{r,n,m}.ref{1},theta{r,n,m}.ref{2},theta{r,n,m}.ref{3},D,y),2),1);
+                    R{r,n,m}.orc_a = mean(-sum(ll_qda(theta{r,n,m}.orc{1},theta{r,n,m}.orc{2},theta{r,n,m}.orc{3},D,y),2),1);
                     [e{r,n,m}.tcp_a, pred{r,n,m}.tcp_a, post{r,n,m}.tcp_a, AUC{r,n,m}.tcp_a] = qda_err(theta{r,n,m}.tcp{1},theta{r,n,m}.tcp{2},theta{r,n,m}.tcp{3},D,y);
                     [e{r,n,m}.ref_a, pred{r,n,m}.ref_a, post{r,n,m}.ref_a, AUC{r,n,m}.ref_a] = qda_err(theta{r,n,m}.ref{1},theta{r,n,m}.ref{2},theta{r,n,m}.ref{3},D,y);
                     [e{r,n,m}.orc_a, pred{r,n,m}.orc_a, post{r,n,m}.orc_a, AUC{r,n,m}.orc_a] = qda_err(theta{r,n,m}.orc{1},theta{r,n,m}.orc{2},theta{r,n,m}.orc{3},D,y);

@@ -4,13 +4,13 @@
 addpath(genpath('../util'));
 
 % Experimental parameters
-prep = {'minusmin','maxdiv'};
+prep = {'minusmin','maxdiv', 'impute0'};
 nR = 1;
 nN = 50;
-nM = 768;
+nM = [];
 
 % Hyperparameters
-lambda = 1e-3;
+lambda = [];
 sigma = 1;
 alpha = 2;
 gamma = 1;

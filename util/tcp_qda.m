@@ -6,20 +6,23 @@ function [theta,varargout] = tcp_qda(X,yX,Z,varargin)
 %           yX 	   	source labels (N x 1)
 % Optional input:
 %     		yZ 		target labels (M samples x 1, for evaluation)
+%           lr      learning rate (default: 'geom' = geometric)
 % 			alpha 	learning rate (default: 1)
 %           lambda  l2-regularization parameter (default: 0)
 % 			maxIter maximum number of iterations (default: 500)
 % 			xTol 	convergence criterion (default: 1e-5)
-% 			viz		visualization during optimization (default: false)
 % Output:
 % 			theta   target model estimate
 % Optional output:
 %           {1}     found worst-case labeling q
-%           {2}   	target loss of the mcpl/ref estimate with q/u
-% 			{3} 	target err/pred of the mcpl/ref esimate with u
+%           {2}   	target risks
+% 			{3} 	target errors
+%           {4}     target predictions
+%           {5}     target posteriors
+%           {6}     target area under the ROC-curve
 %
-% Wouter M. Kouw (2017). Target Contrastive Pessmistic Risk Estimator.
-% Last update: 25-01-2017
+% Wouter M. Kouw (2017). Target Contrastive Pessmistic Risk.
+% Last update: 19-05-2017
 
 % Parse hyperparameters
 p = inputParser;
@@ -31,11 +34,16 @@ addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
 parse(p, varargin{:});
 
-% Sizes
+% Shapes
 [N,D] = size(X);
 [M,~] = size(Z);
-uy = unique(yX);
-K = numel(uy);
+
+% Check for column vector y
+if ~iscolumn(yX); yX = yX'; end
+
+% Labeling
+labels = unique(yX)';
+K = numel(labels);
 
 % Preallocation
 if K==1
@@ -51,10 +59,10 @@ end
 for k = 1:K
     
     % Parameters
-    Nk = sum(yX==uy(k));
+    Nk = sum(yX==labels(k));
     pi_ref(k) = Nk./N;
-    mu_ref(k,:) = sum(X(yX==uy(k),:),1)./Nk;
-    Si_ref(:,:,k) = (bsxfun(@minus,X(yX==uy(k),:),mu_ref(k,:))'*bsxfun(@minus,X(yX==uy(k),:),mu_ref(k,:)))./Nk;
+    mu_ref(k,:) = sum(X(yX==labels(k),:),1)./Nk;
+    Si_ref(:,:,k) = (bsxfun(@minus,X(yX==labels(k),:),mu_ref(k,:))'*bsxfun(@minus,X(yX==labels(k),:),mu_ref(k,:)))./Nk;
     
     % Regularization
     if p.Results.lambda>0
@@ -66,14 +74,14 @@ for k = 1:K
 end
 
 % Log-likelihood of unlabeled samples under reference model
-ll_ref = ll_qda(pi_ref,mu_ref,Si_ref,Z);
+R_ref = ll_qda(pi_ref,mu_ref,Si_ref,Z);
 
 % Initialize target posterior
 q = ones(M,K)./K;
 
 % Initialize mcpl estimates
-llmm = Inf;
-disp('Starting MCPL optimization');
+Rmm = Inf;
+disp('Starting TCP optimization');
 for n = 1:p.Results.maxIter
     
     %%% Maximization
@@ -107,8 +115,8 @@ for n = 1:p.Results.maxIter
     %%%% Minimization
     
     % Gradient step
-    ll_tcp = ll_qda(pi_tcp,mu_tcp,Si_tcp,Z);
-    Dq = ll_tcp - ll_ref;
+    R_tcp = ll_qda(pi_tcp,mu_tcp,Si_tcp,Z);
+    Dq = R_tcp - R_ref;
     
     % Update learning rate
     switch p.Results.lr
@@ -130,22 +138,22 @@ for n = 1:p.Results.maxIter
     
     %%% Check progress
     if rem(n,1e2)==1
-    
+        
         % Maximin likelihood
-        llmm_ = sum(sum(ll_tcp.*q - ll_ref.*q,2),1)./M;
+        Rmm_ = sum(sum(R_tcp.*q - R_ref.*q,2),1)./M;
         
         % Inform user
-        disp(['Iteration ' num2str(n) '/' num2str(p.Results.maxIter) ' - Minimax likelihood: ' num2str(llmm)]);
+        disp(['Iteration ' num2str(n) '/' num2str(p.Results.maxIter) ' - Minimax likelihood: ' num2str(Rmm)]);
         
         % Check for update under tolerance
-        dll = norm(llmm-llmm_);
-        if  (dll < p.Results.xTol) || isnan(llmm_)
+        dll = norm(Rmm-Rmm_);
+        if  (dll < p.Results.xTol) || isnan(Rmm_)
             disp(['Broke at ' num2str(n)]);
             break;
         end
         
         % Update likelihood
-        llmm = llmm_;
+        Rmm = Rmm_;
     end
     
 end
@@ -153,9 +161,10 @@ end
 % Oracle parameter estimates
 if ~isempty(p.Results.yZ)
     
-    % Unique target labels
-    uyZ = unique(p.Results.yZ);
-    K = numel(uyZ);
+    % Check for same labels
+    yZ = p.Results.yZ;
+    if ~iscolumn(yZ); yZ = yZ'; end
+    if ~all(unique(yZ)'==labels); error('Different source and target labels'); end
     
     % Preallocate
     if K==1
@@ -171,10 +180,10 @@ if ~isempty(p.Results.yZ)
     for k = 1:K
         
         % Parameters
-        Mk = sum(p.Results.yZ==uyZ(k),1);
+        Mk = sum(p.Results.yZ==labels(k),1);
         pi_orc(k) = Mk./M;
-        mu_orc(k,:) = sum(Z(p.Results.yZ==uyZ(k),:),1)./Mk;
-        Si_orc(:,:,k) = (bsxfun(@minus,Z(p.Results.yZ==uyZ(k),:),mu_orc(k,:))'*bsxfun(@minus,Z(p.Results.yZ==uyZ(k),:),mu_orc(k,:)))./Mk;
+        mu_orc(k,:) = sum(Z(p.Results.yZ==labels(k),:),1)./Mk;
+        Si_orc(:,:,k) = (bsxfun(@minus,Z(p.Results.yZ==labels(k),:),mu_orc(k,:))'*bsxfun(@minus,Z(p.Results.yZ==labels(k),:),mu_orc(k,:)))./Mk;
         
         % Regularization
         if p.Results.lambda>0
@@ -184,44 +193,44 @@ if ~isempty(p.Results.yZ)
             Si_orc(:,:,k) = V*E*V' + p.Results.lambda*eye(D);
         end
     end
+    
+    % Output parameter
+    theta.orc = {pi_orc,mu_orc,Si_orc};
+    
+    % Risk for worst-case labeling (average negative log-likelihood)
+    R.orc_q = mean(-sum(ll_qda(pi_orc,mu_orc,Si_orc,Z,q),2),1);
 end
 
 % Output parameters
 theta.tcp = {pi_tcp,mu_tcp,Si_tcp};
 theta.ref = {pi_ref,mu_ref,Si_ref};
-theta.orc = {pi_orc,mu_orc,Si_orc};
 
-%%% Optional output
-if nargout > 1
+% Risk for found worst-case labeling (average negative log-likelihood)
+R.tcp_q = mean(-sum(ll_qda(pi_tcp,mu_tcp,Si_tcp,Z,q),2),1);
+R.ref_q = mean(-sum(ll_qda(pi_ref,mu_ref,Si_ref,Z,q),2),1);
+
+if ~isempty(p.Results.yZ)
     
-    % Loss on found worst-case labeling
-    ll.tcp_q = mean(sum(ll_qda(pi_tcp,mu_tcp,Si_tcp,Z,q),2),1);
-    ll.ref_q = mean(sum(ll_qda(pi_ref,mu_ref,Si_ref,Z,q),2),1);
-    ll.orc_q = mean(sum(ll_qda(pi_orc,mu_orc,Si_orc,Z,q),2),1);
+    % Risk for true labeling (average negative log-likelihood)
+    R.tcp_u = mean(-sum(ll_qda(pi_tcp,mu_tcp,Si_tcp,Z,p.Results.yZ),2),1);
+    R.ref_u = mean(-sum(ll_qda(pi_ref,mu_ref,Si_ref,Z,p.Results.yZ),2),1);
+    R.orc_u = mean(-sum(ll_qda(pi_orc,mu_orc,Si_orc,Z,p.Results.yZ),2),1);
     
-    if ~isempty(p.Results.yZ)
-        
-        % Loss on true labeling
-        ll.tcp_u = mean(sum(ll_qda(pi_tcp,mu_tcp,Si_tcp,Z,p.Results.yZ),2),1);
-        ll.ref_u = mean(sum(ll_qda(pi_ref,mu_ref,Si_ref,Z,p.Results.yZ),2),1);
-        ll.orc_u = mean(sum(ll_qda(pi_orc,mu_orc,Si_orc,Z,p.Results.yZ),2),1);
-        
-        % Error on true labeling
-        [e.tcp_u, pred.tcp_u, post.tcp_u, AUC.tcp_u] = qda_err(pi_tcp,mu_tcp,Si_tcp,Z,p.Results.yZ);
-        [e.ref_u, pred.ref_u, post.ref_u, AUC.ref_u] = qda_err(pi_ref,mu_ref,Si_ref,Z,p.Results.yZ);
-        [e.orc_u, pred.orc_u, post.orc_u, AUC.orc_u] = qda_err(pi_orc,mu_orc,Si_orc,Z,p.Results.yZ);
-        
-        % Output
-        varargout{3} = e;
-        varargout{4} = pred;
-        varargout{5} = post;
-        varargout{6} = AUC;
-    end
+    % Error on true labeling
+    [e.tcp_u, pred.tcp_u, post.tcp_u, AUC.tcp_u] = qda_err(pi_tcp,mu_tcp,Si_tcp,Z,p.Results.yZ);
+    [e.ref_u, pred.ref_u, post.ref_u, AUC.ref_u] = qda_err(pi_ref,mu_ref,Si_ref,Z,p.Results.yZ);
+    [e.orc_u, pred.orc_u, post.orc_u, AUC.orc_u] = qda_err(pi_orc,mu_orc,Si_orc,Z,p.Results.yZ);
     
     % Output
-    varargout{1} = q;
-    varargout{2} = ll;
+    varargout{3} = e;
+    varargout{4} = pred;
+    varargout{5} = post;
+    varargout{6} = AUC;
 end
+
+% Output
+varargout{1} = q;
+varargout{2} = R;
 
 end
 

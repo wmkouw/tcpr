@@ -23,6 +23,14 @@ addOptional(p, 'saveName', []);
 addOptional(p, 'viz', false);
 parse(p, varargin{:});
 
+% Check for column vector y
+if ~iscolumn(y); y = y'; end
+
+% Labeling
+labels = unique(y);
+K = numel(labels);
+if K>2; error('Binary classification only'); end
+
 % Number of sample sizes
 lNN = length(p.Results.nN);
 if isempty(p.Results.nM)
@@ -106,7 +114,7 @@ for r = 1:p.Results.nR
                                 theta_f = iwc(X(ixf~=f,:),yX(ixf~=f),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'lambda', Lambda(la), 'clf', 'lr', 'iwe', p.Results.iwe, 'gamma', p.Results.gamma);
                                 
                                 % Evaluate on held-out source folds (log-loss)
-                                R_la(la) = mean(-yXf.*Xa*theta_f + log(exp(-Xa*theta_f) + exp(Xa*theta_f)),1);
+                                R_la(la) = mean(-yXf.*Xa*theta_f + log(exp(labels(1)*Xa*theta_f) + exp(labels(2)*Xa*theta_f)),1);
                         end
                     end
                 end

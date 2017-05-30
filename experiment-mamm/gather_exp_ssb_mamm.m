@@ -10,11 +10,11 @@ load(dataName)
 saveName = 'results/';
 
 % Experimental parameters
-clfs = {'tca', 'iwc_kmm_lsq', 'rba', 'tcp-ls', 'tcp-lda', 'tcp-qda'};
-clfs_names = {'tca', 'kmm',  'rba', 'tcp_ls', 'tcp_lda', 'tcp_qda'};
+clfs = {'tca', 'iwc_kmm_lsq', 'rcsa', 'rba', 'tcp-ls', 'tcp-lda', 'tcp-qda'};
+clfs_names = {'tca', 'kmm',  'rcsa', 'rba', 'tcp_ls', 'tcp_lda', 'tcp_qda'};
 nR = 1;
 no = '1';
-prep = 'minusminmaxdiv';
+prep = 'minusminmaxdivimpute0';
 
 % Number of classifiers and combinations
 nCl = length(clfs);

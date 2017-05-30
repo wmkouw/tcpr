@@ -10,7 +10,6 @@ addOptional(p, 'nF', 5);
 addOptional(p, 'gamma', 1);
 addOptional(p, 'lambda', 1);
 addOptional(p, 'clip', 1000);
-addOptional(p, 'iwe', 'kmm')
 addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'prep', {''});
@@ -60,7 +59,7 @@ for m = 1:lNM
                     for f = 1:p.Results.nF
                         
                         % Train on included folds
-                        theta_f = rba(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', Lambda(la), 'clip', p.Results.clip, 'iwe', p.Results.iwe);
+                        theta_f = rba(X(ixNN(ixFo~=f),:),yX(ixNN(ixFo~=f)),Z(ixNM,:), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', Lambda(la), 'clip', p.Results.clip);
                         
                         % Augment held-out fold
                         Xa = [X(ixNN(ixFo==f),:) ones(length(ixNN(ixFo==f)),1)];
@@ -69,7 +68,7 @@ for m = 1:lNM
                         % Evaluate on held-out source folds (log-loss)
                         for j = 1:size(Xa,1)
                             [~,yi] = max(yXf(j)==labels,[],2);
-                            R_la(la) = R_la(la) + (-Xa(j,:)*theta_f(yi,:)' + log(sum(exp(Xa(j,:)*theta_f'))));
+                            R_la(la) = R_la(la) + (-Xa(j,:)*theta_f(:,yi) + log(sum(exp(Xa(j,:)*theta_f))));
                         end                        
                         R_la(la) = R_la(la)./size(Xa,1);
                     end
@@ -85,7 +84,7 @@ for m = 1:lNM
             disp(['\lambda = ' num2str(lambda)]);
             
             % Call classifier and evaluate
-            [theta{r,n,m},iw{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = rba(X(ixNN,:),yX(ixNN),Z(ixNM,:),'yZ', yZ(ixNM), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', lambda, 'clip', p.Results.clip, 'iwe', p.Results.iwe);
+            [theta{r,n,m},iw{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = rba(X(ixNN,:),yX(ixNN),Z(ixNM,:),'yZ', yZ(ixNM), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', lambda, 'clip', p.Results.clip);
             
         end
     end

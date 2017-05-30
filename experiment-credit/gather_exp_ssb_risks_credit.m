@@ -13,7 +13,7 @@ clfs = {'slda','tcp-lda','tlda','sqda','tcp-qda','tqda','sls','tcp-ls', 'tls'};
 clfs_names = {'slda','tcp_lda','tlda','sqda','tcp_qda','tqda','sls','tcp_ls', 'tls'};
 nR = 1;
 no = '1';
-prep = 'minusminfstdimpute0';
+prep = 'minusminmaxdivimpute0';
 
 % Number of classifiers and combinations
 nCl = length(clfs);

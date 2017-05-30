@@ -6,6 +6,7 @@ function [theta,varargout] = tcp_ls(X,yX,Z,varargin)
 %           yX 	   	source labels (N x 1)
 % Optional input:
 %     		yZ 		target labels (M samples x 1, for evaluation)
+%           lr      learning rate (default: 'geom' = geometric)
 % 			alpha 	learning rate accelerant (default: 1)
 %           lambda  l2-regularization parameter (default: 0)
 % 			maxIter maximum number of iterations (default: 500)
@@ -14,32 +15,41 @@ function [theta,varargout] = tcp_ls(X,yX,Z,varargin)
 % 			theta   tcp estimate
 % Optional output:
 %           {1}     found worst-case labeling q
-%           {2}   	target loss of the mcpl/ref estimate with q/u
-% 			{3} 	target err/pred of the mcpl/ref esimate with u
+%           {2}   	target risks
+% 			{3} 	target errors
+%           {4}     target predictions
+%           {5}     target posteriors
+%           {6}     target area under the ROC-curve
 %
 % Wouter M. Kouw (2017). Target Contrastive Pessimistic Risk
-% Last update: 27-01-2017
+% Last update: 19-05-2017
 
 % Parse hyperparameters
 p = inputParser;
 addOptional(p, 'yZ', []);
+addOptional(p, 'lr', 'geom');
 addOptional(p, 'alpha', 2);
 addOptional(p, 'lambda', 0);
 addOptional(p, 'maxIter', 5e4);
 addOptional(p, 'xTol', 1e-12);
-addOptional(p, 'lr', 'geom');
 parse(p, varargin{:});
 
 % Augment data with bias if necessary
 if ~all(X(:,end)==1); X = [X ones(size(X,1),1)]; end
 if ~all(Z(:,end)==1); Z = [Z ones(size(Z,1),1)]; end
 
-% Size
+% Shapes
 [N,D] = size(X);
 [M,~] = size(Z);
-labels = unique(yX);
+
+% Check for column vector y
+if ~iscolumn(yX); yX = yX'; end
+
+% Labeling
+labels = unique(yX)';
 K = numel(labels);
-if K~=2; error('Binary classification only'); end
+if K>2; error('Binary classification only'); end
+if ~all(labels==[-1 +1]); error('Labels {-1,+1} expected'); end
 
 % Reference parameter estimates
 theta.ref = (X'*X + p.Results.lambda*eye(D))\(X'*yX);
@@ -50,13 +60,13 @@ Dq = zeros(M,K);
 theta.tcp = theta.ref;
 
 Rmm = Inf;
-disp('Starting MCPL optimization');
+disp('Starting TCP optimization');
 for n = 1:p.Results.maxIter
     
     %%% Minimization
     
     % Closed-form minimization w.r.t. theta
-    theta.tcp = (Z'*Z + p.Results.lambda*eye(D))\(Z'*(labels(1)*q(:,1) + labels(2)*q(:,2)));
+    theta.tcp = (Z'*Z + p.Results.lambda*eye(D))\(Z'*(-q(:,1) + q(:,2)));
     
     %%% Maximization
     
@@ -106,58 +116,60 @@ for n = 1:p.Results.maxIter
     Rmm = Rmm_;
 end
 
-% Oracle parameter estimates
-theta.orc = (Z'*Z + p.Results.lambda*eye(D))\(Z'*p.Results.yZ);
-
-%%% Optional output
-if nargout > 1
+if ~isempty(p.Results.yZ)
     
-    % Risk of found worst-case labeling
-    R.tcp_q = mean(q(:,1).*(Z*theta.tcp - labels(1)).^2 + q(:,2).*(Z*theta.tcp - labels(2)).^2,1);
-    R.ref_q = mean(q(:,1).*(Z*theta.ref - labels(1)).^2 + q(:,2).*(Z*theta.ref - labels(2)).^2,1);
+    % Check for same labels
+    yZ = p.Results.yZ;
+    if ~iscolumn(yZ); yZ = yZ'; end
+    if ~all(unique(yZ)'==labels); error('Different source and target labels'); end
+    
+    % Oracle parameter estimates
+    theta.orc = (Z'*Z + p.Results.lambda*eye(D))\(Z'*p.Results.yZ);
+    
+    % Risk of oracle classifier for worst-case labeling
     R.orc_q = mean(q(:,1).*(Z*theta.orc - labels(1)).^2 + q(:,2).*(Z*theta.orc - labels(2)).^2,1);
-    
-    if ~isempty(p.Results.yZ)
-        
-        % Force target labels in {-1,+1}
-        yZ = p.Results.yZ; yZ(yZ~=1) = -1;
-        
-        % Risk of true labeling
-        R.tcp_u = mean((Z*theta.tcp - yZ).^2,1);
-        R.ref_u = mean((Z*theta.ref - yZ).^2,1);
-        R.orc_u = mean((Z*theta.orc - yZ).^2,1);
-        
-        % Posteriors
-        post.tcp_u = exp(Z*theta.tcp)./(exp(-Z*theta.tcp) + exp(Z*theta.tcp));
-        post.ref_u = exp(Z*theta.ref)./(exp(-Z*theta.ref) + exp(Z*theta.ref));
-        post.orc_u = exp(Z*theta.orc)./(exp(-Z*theta.orc) + exp(Z*theta.orc));
-        
-        % Predictions
-        pred.tcp_u = sign(Z*theta.tcp);
-        pred.ref_u = sign(Z*theta.ref);
-        pred.orc_u = sign(Z*theta.orc);
-        
-        % Error on true labeling
-        e.tcp_u = mean(pred.tcp_u ~= yZ);
-        e.ref_u = mean(pred.ref_u ~= yZ);
-        e.orc_u = mean(pred.orc_u ~= yZ);
-        
-        % AUC on true labeling
-        [~,~,~,AUC.tcp_u] = perfcurve(yZ,post.tcp_u,+1);
-        [~,~,~,AUC.ref_u] = perfcurve(yZ,post.ref_u,+1);
-        [~,~,~,AUC.orc_u] = perfcurve(yZ,post.orc_u,+1);
-        
-        % Output predictions and error
-        varargout{3} = e;
-        varargout{4} = pred;
-        varargout{5} = post;
-        varargout{6} = AUC;
-    end
-    
-    % Output
-    varargout{1} = q;
-    varargout{2} = R;
-    
 end
+
+% Risk for found worst-case labeling
+R.tcp_q = mean(q(:,1).*(Z*theta.tcp - labels(1)).^2 + q(:,2).*(Z*theta.tcp - labels(2)).^2,1);
+R.ref_q = mean(q(:,1).*(Z*theta.ref - labels(1)).^2 + q(:,2).*(Z*theta.ref - labels(2)).^2,1);
+
+if ~isempty(p.Results.yZ)
+    
+    % Risk for true labeling
+    R.tcp_u = mean((Z*theta.tcp - yZ).^2,1);
+    R.ref_u = mean((Z*theta.ref - yZ).^2,1);
+    R.orc_u = mean((Z*theta.orc - yZ).^2,1);
+    
+    % Posteriors
+    post.tcp_u = exp(Z*theta.tcp)./(exp(-Z*theta.tcp) + exp(Z*theta.tcp));
+    post.ref_u = exp(Z*theta.ref)./(exp(-Z*theta.ref) + exp(Z*theta.ref));
+    post.orc_u = exp(Z*theta.orc)./(exp(-Z*theta.orc) + exp(Z*theta.orc));
+    
+    % Predictions
+    pred.tcp_u = sign(Z*theta.tcp);
+    pred.ref_u = sign(Z*theta.ref);
+    pred.orc_u = sign(Z*theta.orc);
+    
+    % Error on true labeling
+    e.tcp_u = mean(pred.tcp_u ~= yZ);
+    e.ref_u = mean(pred.ref_u ~= yZ);
+    e.orc_u = mean(pred.orc_u ~= yZ);
+    
+    % AUC on true labeling
+    [~,~,~,AUC.tcp_u] = perfcurve(yZ,post.tcp_u,+1);
+    [~,~,~,AUC.ref_u] = perfcurve(yZ,post.ref_u,+1);
+    [~,~,~,AUC.orc_u] = perfcurve(yZ,post.orc_u,+1);
+    
+    % Output predictions and error
+    varargout{3} = e;
+    varargout{4} = pred;
+    varargout{5} = post;
+    varargout{6} = AUC;
+end
+
+% Output
+varargout{1} = q;
+varargout{2} = R;
 
 end

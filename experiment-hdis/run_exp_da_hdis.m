@@ -4,18 +4,18 @@
 addpath(genpath('../util'));
 
 % Experimental parameters
-prep = {'minusmin','maxdiv'};
+prep = {'minusmin','maxdiv', 'impute0'};
 nR = 1;
 
 % Hyperparameters
-lambda = 1e-3;
+lambda = [];
 alpha = 2;
 mu = 1./2;
 nC = 8;
 
 % Optimization parameters
-xTol = 1e-8;
-maxIter = 1e3;
+xTol = 1e-12;
+maxIter = 2e3;
 
 % Save location
 mkdir results

@@ -24,13 +24,20 @@ function [W,P,varargout] = tca(X,yX,Z,varargin)
 % Copyright: Wouter M. Kouw
 % Last update: 04-04-2016
 
-addpath(genpath('~/Dropbox/Libs/minFunc'));
+if isempty(which('minFunc')); error('Add minFunc package to path'); end
 
 % Shapes
 [n,~] = size(X);
 [m,~] = size(Z);
+
+% Check for column vector y
+if ~iscolumn(yX); yX = yX'; end
+
+% Labeling
 labels = unique(yX)';
 K = numel(labels);
+if K>2; error('Binary classification only'); end
+if ~all(labels==[-1 +1]); error('Labels {-1,+1} expected'); end
 
 % Parse input
 p = inputParser;
@@ -55,13 +62,18 @@ W = mlr(B(1:n,:), yX, p.Results.l2);
 
 if ~isempty(p.Results.yZ)
     
+    % Check for same labels
+    yZ = p.Results.yZ;
+    if ~iscolumn(yZ); yZ = yZ'; end
+    if ~all(unique(yZ)'==labels); error('Different source and target labels'); end
+    
     % Apply classifier
     ZW = [B(n+1:n+m,:) ones(m,1)]*W;
-    
+
     % Average negative log-likelihood (-ALL)
     R = 0;
     for j = 1:m
-        [~,yi] = max(p.Results.yZ(j)==labels,[],2);
+        [~,yi] = max(yZ(j)==labels);
         R = R + -ZW(j,yi) + log(sum(exp(ZW(j,:)),2));
     end
     R = R./m;
@@ -70,7 +82,7 @@ if ~isempty(p.Results.yZ)
     [~,pred] = max(ZW,[],2);
     
     % Compute error
-    e = mean(labels(pred)' ~= p.Results.yZ);
+    e = mean(labels(pred)' ~= yZ);
     
     % Compute posteriors
     a = max(ZW,[],2);
@@ -78,7 +90,7 @@ if ~isempty(p.Results.yZ)
     
     % Compute AUC
     if K==2
-        [~,~,~,AUC] = perfcurve(p.Results.yZ,post,+1);
+        [~,~,~,AUC] = perfcurve(yZ,post,+1);
     else
         AUC = NaN;
         disp('No AUC - K ~=2');    

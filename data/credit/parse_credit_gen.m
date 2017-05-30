@@ -12,6 +12,7 @@ function [D,y] = parse_credit_gen(varargin)
 % Parse
 p = inputParser;
 addOptional(p, 'save', false);
+addOptional(p, 'impute', false);
 parse(p, varargin{:});
 
 %% Initialize variables.
@@ -110,6 +111,10 @@ D(:,strIndex) = A;
 y = D(:,end);
 y(y==2) = -1;
 D = D(:,1:end-1);
+
+if p.Results.impute
+    D(isnan(D)) = 0;
+end
 
 if p.Results.save
     save('credit', 'D','y');

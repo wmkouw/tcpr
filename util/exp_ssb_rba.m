@@ -14,7 +14,6 @@ addOptional(p, 'nF', 5);
 addOptional(p, 'gamma', 1);
 addOptional(p, 'lambda', 1);
 addOptional(p, 'clip', 1e5);
-addOptional(p, 'iwe', 'kmm')
 addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
 addOptional(p, 'ssb', 'sdw');
@@ -29,6 +28,13 @@ if isempty(p.Results.nM)
 else
     lNM = length(p.Results.nM);
 end
+
+% Check for column vector y
+if ~iscolumn(y); y = y'; end
+
+% Labeling
+labels = unique(y)';
+K = numel(labels);
 
 % Preallocate
 theta = cell(p.Results.nR,lNN,lNM);
@@ -90,13 +96,14 @@ for r = 1:p.Results.nR
                     for f = 1:p.Results.nF
                         
                         % Train on included folds
-                        theta_f = rba(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', Lambda(la), 'clip', p.Results.clip, 'iwe', p.Results.iwe);
+                        theta_f = rba(X(ixf~=f,:),yX(ixf~=f),Z(ixnM,:), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', Lambda(la), 'clip', p.Results.clip);
                         
                         % Evaluate on held-out source folds (-ALL)
-                        Xa = [X(ixf==f,:) ones(length(ixf==f),1)];
+                        Xa = [X(ixf==f,:) ones(sum(ixf==f),1)];
                         yXf = yX(ixf==f);
                         for j = 1:size(Xa,1)
-                            R_la(la) = R_la(la) + (-Xa(j,:)*theta_f(yXf(j),:)' + log(sum(exp(Xa(j,:)*theta_f'))));
+                            [~,yj] = max(yXf(j)==labels,[],2);
+                            R_la(la) = R_la(la) + (-Xa(j,:)*theta_f(:,yj) + log(sum(exp(Xa(j,:)*theta_f))));
                         end
                         R_la(la) = R_la(la)./size(Xa,1);
                     end
@@ -111,7 +118,7 @@ for r = 1:p.Results.nR
             disp(['\lambda = ' num2str(lambda)]);
             
             % Call classifier and evaluate
-            [theta{r,n,m},iw{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = rba(X,yX,Z(ixnM,:), 'yZ', yZ(ixnM), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', lambda, 'clip', p.Results.clip, 'iwe', p.Results.iwe);
+            [theta{r,n,m},iw{r,n,m},R(r,n,m),e(r,n,m),pred{r,n,m},post{r,n,m},AUC(r,n,m)] = rba(X,yX,Z(ixnM,:), 'yZ', yZ(ixnM), 'xTol',p.Results.xTol,'maxIter', p.Results.maxIter, 'gamma', p.Results.gamma, 'lambda', lambda, 'clip', p.Results.clip);
             
         end
     end

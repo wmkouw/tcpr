@@ -14,6 +14,7 @@ addOptional(p, 'maxIter', 1e4);
 addOptional(p, 'xTol', 1e-10);
 addOptional(p, 'mu', 1);
 addOptional(p, 'alpha', 1);
+addOptional(p, 'sigma', 1);
 addOptional(p, 'lambda', []);
 addOptional(p, 'gamma', .1);
 addOptional(p, 'useGamma', true);
@@ -70,7 +71,7 @@ for n = cmbl
         case 'kmm-lr'
             exp_da_iwc(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'iwe', 'kmm', 'clf', 'lr', 'gamma', p.Results.gamma);
         case 'rba'
-            exp_da_rba(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'gamma', p.Results.gamma, 'lambda', p.Results.lambda,'clip', p.Results.clip, 'iwe', p.Results.iwe);
+            exp_da_rba(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'gamma', p.Results.gamma, 'lambda', p.Results.lambda,'clip', p.Results.clip);
         case 'rcsa'
             exp_da_rcsa(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'useGamma', p.Results.useGamma, 'lambda', p.Results.lambda);
         case 'tca'

@@ -56,7 +56,7 @@ switch p.Results.clf
     case 'kmm-lr'
         exp_ssb_iwc(D,y, 'nN', p.Results.nN, 'nM', p.Results.nM, 'setDiff', p.Results.setDiff, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))} '_nR' num2str(p.Results.nR) '_'], 'iwe', 'kmm', 'clf', 'lr', 'gamma', p.Results.gamma);
     case 'rba'
-        exp_ssb_rba(D,y, 'nN', p.Results.nN, 'nM', p.Results.nM, 'setDiff', p.Results.setDiff, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))} '_nR' num2str(p.Results.nR) '_'], 'gamma', p.Results.gamma, 'lambda', p.Results.lambda,'clip', p.Results.clip, 'iwe', p.Results.iwe);
+        exp_ssb_rba(D,y, 'nN', p.Results.nN, 'nM', p.Results.nM, 'setDiff', p.Results.setDiff, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))} '_nR' num2str(p.Results.nR) '_'], 'gamma', p.Results.gamma, 'lambda', p.Results.lambda,'clip', p.Results.clip);
     case 'rcsa'
         exp_ssb_rcsa(D,y, 'nN', p.Results.nN, 'nM', p.Results.nM, 'setDiff', p.Results.setDiff, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))} '_nR' num2str(p.Results.nR) '_'], 'useGamma', p.Results.useGamma, 'lambda', p.Results.lambda);
     case 'tca'

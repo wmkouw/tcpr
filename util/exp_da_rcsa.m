@@ -7,7 +7,7 @@ addOptional(p, 'NN', []);
 addOptional(p, 'NM', []);
 addOptional(p, 'nR', 1);
 addOptional(p, 'nF', 5);
-addOptional(p, 'B', 5);
+addOptional(p, 'B', 100);
 addOptional(p, 'useGamma', true);
 addOptional(p, 'downsampling', false);
 addOptional(p, 'lambda', 0);

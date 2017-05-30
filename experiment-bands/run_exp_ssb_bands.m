@@ -4,13 +4,13 @@
 addpath(genpath('../util'));
 
 % Experimental parameters
-prep = {'minusmin','maxdiv'};
+prep = {'minusmin','maxdiv', 'impute0'};
 nR = 1;
 nN = 50;
 nM = [];
 
 % Hyperparameters
-lambda = 1e-3;
+lambda = [];
 sigma = 1;
 alpha = 2;
 gamma = 1;
@@ -26,7 +26,7 @@ mkdir results
 saveName = 'results/';
 
 % Loop over all included classifiers
-clfs = {'rcsa'};
+clfs = {'tca', 'kmm-lsq', 'rcsa', 'rba', 'tcp-ls', 'tcp-lda', 'tcp-qda'};
 for c = 1:length(clfs)
 
     exp_ssb_bands('prep', prep, 'nR', nR, 'nN', nN, 'nM', nM, 'clf', clfs{c}, ...

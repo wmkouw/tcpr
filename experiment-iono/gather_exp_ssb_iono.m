@@ -80,9 +80,9 @@ for c = 1:length(clfs)
 end
 
 % Average over repeats
-mean_risks = mean(risks, 3, 'omitnan');
-mean_error = mean(error, 3, 'omitnan');
-mean_areas = mean(areas, 3, 'omitnan');
+mean_risks = mean(risks, 2, 'omitnan');
+mean_error = mean(error, 2, 'omitnan');
+mean_areas = mean(areas, 2, 'omitnan');
 
 % Combine into table
 T = array2table(mean_areas', 'VariableNames', clfs_names)

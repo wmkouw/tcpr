@@ -52,10 +52,10 @@ for a = 1:size(dataArray,2)-2
 end
 
 y = zeros(size(dataArray,1),1);
-y(strcmp(dataArray{:,end-1},'unacc')) = -1;
-y(strcmp(dataArray{:,end-1},'acc')) = +1;
-y(strcmp(dataArray{:,end-1},'good')) = +1;
-y(strcmp(dataArray{:,end-1},'vgood')) = +1;
+y(strcmp(dataArray{:,end-1},'unacc'),1) = -1;
+y(strcmp(dataArray{:,end-1},'acc'),1) = +1;
+y(strcmp(dataArray{:,end-1},'good'),1) = +1;
+y(strcmp(dataArray{:,end-1},'vgood'),1) = +1;
 
 if p.Results.save
     save('car', 'D','y');

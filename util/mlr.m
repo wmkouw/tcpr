@@ -12,19 +12,24 @@ options.DerivativeCheck = 'off';
 if ~all(X(:,end)==1); X = [X ones(size(X,1),1)]; end
 
 % Shapes
-[n,D] = size(X);
+[N,D] = size(X);
+
+% Check for column vector y
+if ~iscolumn(y); y = y'; end
+
+% Labeling
 labels = unique(y)';
 K = numel(labels); 
 
 % Minimize loss
-w = minFunc(@mLR_grad, zeros(D*K,1), options, X(:,1:end-1),y,lambda);
+w = minFunc(@mlr_grad, zeros(D*K,1), options, X(:,1:end-1),y,lambda);
 
 % Reshape into K-class matrix
 W = [reshape(w(1:end-K), [D-1 K]); w(end-K+1:end)'];
 
 end
 
-function [L, dL] = mLR_grad(W,X,y, lambda)
+function [L, dL] = mlr_grad(W,X,y, lambda)
 % Multiclass logistic regression gradient
 
 % Shape
@@ -44,7 +49,7 @@ XW = bsxfun(@rdivide, XW, max(sum(XW, 2), realmin));
 % Negative log-likelihood of each sample
 L = 0;
 for i=1:n
-    [~,yi] = max(y(i)==labels,[],1);
+    [~,yi] = max(y(i)==labels);
     L = L - log(max(XW(i,yi), realmin));
 end
 L = L./n + lambda .* sum([W(:); W0(:)] .^ 2);

@@ -30,6 +30,9 @@ else
     lNM = length(p.Results.nM);
 end
 
+% Check for column vector y
+if ~iscolumn(y); y = y'; end
+
 % Labels
 labels = unique(y);
 K = numel(labels);
@@ -90,17 +93,17 @@ for r = 1:p.Results.nR
                 for la = 1:length(Lambda)
                     
                     % Split folds
-                    ixf = randsample(1:p.Results.nF, length(ixNN), true);
+                    ixf = randsample(1:p.Results.nF, p.Results.nN(n), true);
                     for f = 1:p.Results.nF
                         
                         % Train on included folds
                         theta_f = tca(X(ixf~=f,:),yX(ixf~=f),Z(ixNM,:),'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'nC', p.Results.nC, 'l2', Lambda(la));
                         
                         % Evaluate on held-out source folds (error)
-                        lf = sum(ixFo==f);
-                        [Pf,KXZ] = tc(X(ixNN(ixFo==f),:)', Z(ixNM,:)', 'sigma', p.Results.sigma, 'mu', p.Results.mu, 'nC', p.Results.nC);
+                        lf = sum(ixf==f);
+                        [Pf,KXZ] = tc(X(ixf==f,:)', Z(ixNM,:)', 'sigma', p.Results.sigma, 'mu', p.Results.mu, 'nC', p.Results.nC);
                         [~,pred_f] = max([KXZ(1:lf,:)*Pf ones(lf,1)]*theta_f, [], 2);
-                        R_la(la) = mean(labels(pred_f) ~= yX(ixNN(ixFo==f)),1);
+                        R_la(la) = mean(labels(pred_f) ~= yX(ixf==f),1);
                     end
                 end
                 % Select minimal

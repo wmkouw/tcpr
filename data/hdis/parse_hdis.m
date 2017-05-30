@@ -10,16 +10,16 @@ parse(p, varargin{:});
 D = [];
 y = [];
 domains = [0];
-domain_names = {'cleveland', 'hungary', 'switzerland', 'virginia'};
+domain_names = {'ohio', 'hungary', 'switzerland', 'california'};
 
-%% Cleveland
+%% Cleveland (Ohio)
 load hdis-cleveland
 
 y = [y; Y];
 D = [D; X];
 domains = [domains; size(D,1)];
 
-%% Hungary
+%% Hungarian (Hungary)
 load hdis-hungarian
 
 y = [y; Y];
@@ -33,7 +33,7 @@ y = [y; Y];
 D = [D; X];
 domains = [domains; size(D,1)];
 
-%% Virginia
+%% Virginia (should be California)
 load hdis-virginia
 
 y = [y; Y];

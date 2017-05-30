@@ -4,6 +4,7 @@ function [D,y] = get_credit(varargin)
 % Parse
 p = inputParser;
 addOptional(p, 'save', false);
+addOptional(p, 'impute', false);
 parse(p, varargin{:});
 
 %% Start downloading files
@@ -17,7 +18,7 @@ websave('credit.names', ...
 fprintf('Done \n')
 
 %% Call parse script
-[D,y] = parse_credit_gen('save', p.Results.save);
+[D,y] = parse_credit_gen('save', p.Results.save, 'impute', p.Results.impute);
 
 end
 
