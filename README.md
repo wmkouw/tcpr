@@ -1,8 +1,8 @@
-# Domain adaptation - target contrastive pessimistic risk
+# Domain adaptation: target contrastive pessimistic risk
 
 This repository contains experiments and MATLAB code accompanying the paper:
 
-"Target contrastive pessimistic risk"
+"Target contrastive pessimistic risk for robust domain adaptation"
 
 which is currently under review.
 
