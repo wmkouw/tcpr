@@ -17,7 +17,7 @@ Installation consists of downloading and adding to your path the following two p
 
 ## Usage
 
-Each folder marked __experiment\*__, contains a script starting with __run_exp\*__. It calls a function that contains experimental parameters, such as which classifiers to test and how long to run the optimization procedure, and runs the experiment based on these. There are two types of experiments, one involving sample selection bias (abbreviated __\_ssb__) and one involving domain adaptation (abbreviated __\_da__).
+Each folder marked __experiment\*__, contains a script starting with __run_exp\*__. It calls a function that contains experimental parameters, such as which classifiers to test, and runs the experiment. There are two types, one involves sample selection bias (abbreviated __\_ssb__; bands, car, credit, iono, mamm, pima, t3) and the other involves domain adaptation (abbreviated __\_da__; hdis, wAUS).
 
 Results will be stored in a new folder. These can be gathered and printed by using the function __gather_exp\*__.
 
