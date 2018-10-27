@@ -8,7 +8,7 @@ addOptional(p, 'clf', 'tcp-ls');
 addOptional(p, 'nC', 3);
 addOptional(p, 'nR', 1);
 addOptional(p, 'nF', 5);
-addOptional(p, 'lr', 'geom');
+addOptional(p, 'lr', 'lin');
 addOptional(p, 'prep', {''});
 addOptional(p, 'maxIter', 1e4);
 addOptional(p, 'xTol', 1e-10);
@@ -23,21 +23,14 @@ addOptional(p, 'clip', 1000);
 addOptional(p, 'NN', []);
 addOptional(p, 'NM', []);
 addOptional(p, 'dataName', 'wAUS_zscore_imp0');
-addOptional(p, 'saveName', 'results/'w);
+addOptional(p, 'saveName', 'results/');
 parse(p, varargin{:});
 
 % Report which classifier
 disp(['Running: ' p.Results.clf]);
 
 % Load dataset
-% try
-    load(p.Results.dataName)
-% catch TODO: write data collection script
-%     cd('../data/hdis')
-%     [D,y,domains,~] = get_hdis('save', true, 'impute', true);
-%     copyfile heart_disease.mat ../../experiment-hdis/
-%     cd('../../experiment-hdis')
-% end 
+load(p.Results.dataName)
 disp(['Loaded dataset: ' p.Results.dataName]);
 
 % Preprocess data
@@ -60,6 +53,10 @@ for n = cmbl
     
     % Select adaptive approach
     switch p.Results.clf
+        case 's-lda'
+            exp_da_sda(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'clf', 'lda', 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'lambda', p.Results.lambda);
+        case 's-qda'
+            exp_da_sda(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'clf', 'qda', 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'lambda', p.Results.lambda);
         case 'tcp-lda'
             exp_da_tcp(D(ixS,:), y(ixS), D(ixT,:), y(ixT), 'NN', p.Results.NN, 'nR', p.Results.nR, 'nF', p.Results.nF, 'maxIter', p.Results.maxIter, 'xTol', p.Results.xTol, 'saveName', [p.Results.saveName p.Results.dataName '_prep' p.Results.prep{logical(cellfun(@isstr, p.Results.prep))}  '_cc' sprintf('%1i', n) '_nR' num2str(p.Results.nR) '_'], 'alpha', p.Results.alpha, 'lambda', p.Results.lambda, 'clf', 'tcp-lda', 'lr', p.Results.lr);
         case 'tcp-qda'

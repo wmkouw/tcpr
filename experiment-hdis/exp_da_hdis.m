@@ -35,7 +35,6 @@ try
 catch
     cd('../data/hdis')
     [D,y,domains,~] = get_hdis('save', true, 'impute', true);
-    copyfile heart_disease.mat ../../experiment-hdis/
     cd('../../experiment-hdis')
 end 
 disp(['Loaded dataset: ' p.Results.dataName]);

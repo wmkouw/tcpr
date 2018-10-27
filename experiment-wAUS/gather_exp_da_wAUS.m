@@ -9,12 +9,15 @@ load(dataName)
 saveName = 'results/';
 
 % Experimental parameters
-clfs = {'tca', 'iwc_kmm_lsq', 'rcsa', 'rba', 'tcp-lda', 'tcp-qda'};
-clfs_names = {'tca', 'kmm', 'rcsa', 'rba', 'tcp_lda', 'tcp_qda'};
+clfs = {'slda', 'sqda', 'tca', 'iwc_kmm_lsq', 'rcsa', 'rba', 'tcp-lda', 'tcp-qda'};
+clfs_names = {'slda', 'sqda', 'tca', 'kmm', 'rcsa', 'rba', 'tcp_lda', 'tcp_qda'};
+% clfs = {'tcp-qda'};
+% clfs_names = {'tcp-qda'};
+
 cc = 1:12;
 nR = 1;
-no = '2';
-prep = 'maxdiv';
+no = '1';
+prep = 'minusminmaxdiv';
 
 % Number of classifiers and combinations
 nCl = length(clfs);
@@ -31,10 +34,10 @@ for c = 1:length(clfs)
         switch clfs{c}
             case {'sls','tls'}
                 load([saveName dataName '_prep' prep '_cc' num2str(cc(n)) '_nR' num2str(nR) '_results_da_tcp-ls_' no '.mat']);
-            case {'slda','tlda'}
-                load([saveName dataName '_prep' prep '_cc' num2str(cc(n)) '_nR' num2str(nR) '_results_da_tcp-lda_'  no '.mat']);
-            case {'sqda','tqda'}
-                load([saveName dataName '_prep' prep '_cc' num2str(cc(n)) '_nR' num2str(nR) '_results_da_tcp-qda_'  no '.mat']);
+            case {'slda'}
+                load([saveName dataName '_prep' prep '_cc' num2str(cc(n)) '_nR' num2str(nR) '_results_slda_'  no '.mat']);
+            case {'sqda'}
+                load([saveName dataName '_prep' prep '_cc' num2str(cc(n)) '_nR' num2str(nR) '_results_sqda_'  no '.mat']);
             otherwise
                 load([saveName dataName '_prep' prep '_cc' num2str(cc(n)) '_nR' num2str(nR) '_results_da_' clfs{c} '_' no '.mat']);
         end
@@ -42,15 +45,17 @@ for c = 1:length(clfs)
         for r = 1:nR
             
             switch clfs{c}
-                case {'sls', 'slda', 'sqda'}
+                case {'slda', 'sqda'}
+                    
                     % Risk
-                    risks(c,n,r) = R{r}.ref_u;
+                    risks(c,n,r) = l{r};
                     
                     % Error rate
-                    error(c,n,r) = e{r}.ref_u;
+                    error(c,n,r) = e;
                     
                     % AUC
-                    areas(c,n,r) = AUC{r}.ref_u;
+                    areas(c,n,r) = AUC;
+                    
                 case {'tcp-ls', 'tcp-lda', 'tcp-qda'}
                     % Risk
                     risks(c,n,r) = R{r}.tcp_u;
@@ -88,5 +93,11 @@ mean_risks = mean(risks, 3, 'omitnan');
 mean_error = mean(error, 3, 'omitnan');
 mean_areas = mean(areas, 3, 'omitnan');
 
-% Combine into table
-T = array2table(mean_areas', 'VariableNames', clfs_names)
+% Add overall mean
+mean_risks(:, end+1) = mean(mean_risks, 2);
+mean_error(:, end+1) = mean(mean_error, 2);
+mean_areas(:, end+1) = mean(mean_areas, 2);
+
+% Combine into tables
+errors = array2table(mean_error', 'VariableNames', clfs_names)
+AUCs = array2table(mean_areas', 'VariableNames', clfs_names)

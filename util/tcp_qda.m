@@ -120,6 +120,8 @@ for n = 1:p.Results.maxIter
     
     % Update learning rate
     switch p.Results.lr
+        case 'const'
+            lr = p.Results.alpha;
         case 'lin'
             lr = (p.Results.maxIter - n)./(p.Results.alpha*p.Results.maxIter);
         case 'quad'

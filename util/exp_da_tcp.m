@@ -38,7 +38,10 @@ pred = cell(p.Results.nR,lNN,lNM);
 post = cell(p.Results.nR,lNN,lNM);
 q = cell(p.Results.nR,lNN,lNM);
 for r = 1:p.Results.nR
-    disp(['Running repeat ' num2str(r) '/' num2str(p.Results.nR)]);
+    
+    if (rem(r, p.Results.nR./10)==1)
+        fprintf('At repetition \t%i/%i\n', r, nR)
+    end
     
     for n = 1:lNN
         for m = 1:lNM

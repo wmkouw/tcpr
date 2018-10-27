@@ -9,11 +9,11 @@ load(dataName)
 saveName = 'results/';
 
 % Experimental parameters
-clfs = {'tca', 'iwc_kmm_lsq', 'rcsa', 'rba', 'tcp-ls', 'tcp-lda', 'tcp-qda'};
-clfs_names = {'tca', 'kmm', 'rcsa', 'rba', 'tcp_ls', 'tcp_lda', 'tcp_qda'};
+clfs = {'slda', 'sqda', 'tca', 'iwc_kmm_lsq', 'rcsa', 'rba', 'tcp-lda', 'tcp-qda'};
+clfs_names = {'slda', 'sqda', 'tca', 'kmm', 'rcsa', 'rba', 'tcp_lda', 'tcp_qda'};
 cc = 1:12;
 nR = 1;
-no = '1';
+no = '4';
 prep = 'minusminmaxdivimpute0';
 
 % Number of classifiers and combinations
@@ -88,5 +88,11 @@ mean_risks = mean(risks, 3, 'omitnan');
 mean_error = mean(error, 3, 'omitnan');
 mean_areas = mean(areas, 3, 'omitnan');
 
-% Combine into table
-T = array2table(mean_areas', 'VariableNames', clfs_names)
+% Add overall mean
+mean_risks(:, end+1) = mean(mean_risks, 2);
+mean_error(:, end+1) = mean(mean_error, 2);
+mean_areas(:, end+1) = mean(mean_areas, 2);
+
+% Combine into tables
+errors = array2table(mean_error', 'VariableNames', clfs_names)
+AUCs = array2table(mean_areas', 'VariableNames', clfs_names)

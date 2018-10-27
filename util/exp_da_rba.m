@@ -50,7 +50,7 @@ for m = 1:lNM
                 disp(['Cross-validating for regularization parameter']);
                 
                 % Set range of regularization parameter
-                Lambda = [0 10.^[-6:2:0]];
+                Lambda = [0 10.^[-2:2:0]];
                 R_la = zeros(1,length(Lambda));
                 for la = 1:length(Lambda)
                     

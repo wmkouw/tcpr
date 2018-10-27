@@ -9,7 +9,7 @@ function [theta,iw, varargout] = rba(X,yX,Z,varargin)
 p = inputParser;
 addOptional(p, 'lambda', 1e-3);
 addOptional(p, 'sigma', 1);
-addOptional(p, 'gamma', 1);
+addOptional(p, 'gamma', .1);
 addOptional(p, 'order', 'first');
 addOptional(p, 'maxIter', 500);
 addOptional(p, 'xTol', 1e-5);
@@ -113,7 +113,7 @@ for n = 1:p.Results.maxIter
     end
     
     % Report progress
-    if rem(n,10)==1
+    if rem(n, p.Results.maxIter./10)==1
         fprintf('Iteration %i/%i - Gradient: %.8f\n', n,p.Results.maxIter, norm(update));
     end
     

@@ -1,23 +1,26 @@
 # Target contrastive pessimistic risk
 
-This repository contains experiments and MATLAB code accompanying the paper:
+This repository contains code of experiments in the paper:
 
 "Target contrastive pessimistic risk for robust domain adaptation"
 
 which is currently under review.
 
+This repository archives the implementations used to execute the experiments in the paper. For an up-to-date, easy-to-use implementation of TCPR, please refer to [libTLDA](https://github.com/wmkouw/libTLDA).
+
 ## Installation
 
-Installation instructions will follow soon.
-
-## Contains
-
-- __experiment-*__ contains scripts for running experiments reported in the paper.
-- __data__ contains a script for obtaining and processing data used in the paper.
-- __util__ contains utility functions and algorithms.
-
-## Dependencies:
+Installation consists of downloading and adding to your path the following two packages:
 
 - Junfeng Wens's Robust Covariate Shift Adjustment: https://webdocs.cs.ualberta.ca/~jwen4/codes/RobustLearning.zip
-- Xiaojing Ye's projection function: http://ufdc.ufl.edu/IR00000353/
 - Mark Schmidt's minFunc: http://www.cs.ubc.ca/~schmidtm/Software/minFunc.html
+
+## Usage
+
+Each folder marked __experiment\*__, contains a script starting with __run_exp\*__. It calls a function that contains experimental parameters, such as which classifiers to test and how long to run the optimization procedure, and runs the experiment based on these. There are two types of experiments, one involving sample selection bias (abbreviated __\_ssb__) and one involving domain adaptation (abbreviated __\_da__).
+
+Results will be stored in a new folder. These can be gathered and printed by using the function __gather_exp\*__.
+
+### Contact
+
+Questions, bugs, and general feedback can be submitted to the [issues tracker](https://github.com/wmkouw/tcpr/issues).

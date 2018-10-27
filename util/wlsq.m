@@ -29,7 +29,7 @@ if K>2; error('Binary classification only'); end
 if ~all(X(:,end)==1); X = [X ones(size(X,1),1)]; end
 
 % Shape
-[N,D] = size(X);
+[N, D] = size(X);
         
 % Weight samples
 bX = bsxfun(@times, iw, X);
