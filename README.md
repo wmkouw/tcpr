@@ -2,7 +2,7 @@
 
 This repository contains code of experiments in the paper:
 
-"Target contrastive pessimistic risk for robust domain adaptation"
+"Robust domain-adaptive discriminant analysis"
 
 which is currently under review.
 
@@ -17,9 +17,7 @@ Installation consists of downloading and adding to your path the following two p
 
 ## Usage
 
-Each folder marked __experiment\*__, contains a script starting with __run_exp\*__. It calls a function that contains experimental parameters, such as which classifiers to test, and runs the experiment. There are two types, one involves sample selection bias (abbreviated __\_ssb__; bands, car, credit, iono, mamm, pima, t3) and the other involves domain adaptation (abbreviated __\_da__; hdis, wAUS).
-
-Results will be stored in a new folder. These can be gathered and printed by using the function __gather_exp\*__.
+Each folder marked __experiment\*__, contains a script starting with __run_exp\*__. It calls a function that contains experimental parameters, such as which classifiers to test, and runs the experiment. Results will be stored in a new folder. These can be gathered and printed by using the function __gather_exp\*__.
 
 ### Contact
 

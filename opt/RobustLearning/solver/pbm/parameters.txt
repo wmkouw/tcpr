@@ -1,0 +1,35 @@
+
+tolFun:     real        1e-5    Tolerance for the function value.  Must be > 1e-8.                                
+tolCon:     real        1e-5    The tolerance for constraint feasibility.  Must be > 1e-8.                                
+lsParam:    real        0.01    Line search parameter. Must be in (0, 0.5).
+
+maxIter     integer     1000    Maximum number of iterations.  Must be >= 0.
+maxLsIter   integer     50      The maximum number of function calls in line search.  Must be >= 0.
+maxBdl      integer     100     The maximum number of stored subgradients.  Must be >= 0.
+maxFnCall   integer     1000    The maximum number of function evaluations.  Must be >= 0.
+
+verbose     integer     -1      Printout specification: (must be -1)
+                                   -1 : No printout.                                             
+                                    0 : Only the error messages.                                 
+                                    1 : The final values of the objective functions.             
+                                    2 : The whole final solution.                                
+                                    3 : At each iteration values of the objective functions.     
+                                    4 : At each iteration the whole solution.                    
+
+Output results
+Out[1]:     real vector     Solution X
+Out[2]:     real            Objective value at Out[1]
+Out[3]:     int             Number of used iterations.
+Out[4]:     int             Number of used function evaluations.
+Out[5]:     int             Cause of termination:
+                                0 : Everything is OK.                                        
+                                1 : Number of calls of function = maxFnCall.                         
+                                2 : Number of iterations = maxIter.                            
+                                3 : Invalid input parameters.                                
+                                4 : Not enough working space.                                
+                                5 : Failure in quadratic program.                            
+                                6 : The starting point is not feasible.                      
+                                7 : Failure in attaining the demanded accuracy.              
+                                8 : Failure in function or subgradient calculations          
+                                    (assigned by the user).                                  
+

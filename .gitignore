@@ -2,3 +2,5 @@ util/minFunc/*
 util/RobustLearning/*
 */results/*
 *.data
+archive/
+*.ipynb_checkpoints

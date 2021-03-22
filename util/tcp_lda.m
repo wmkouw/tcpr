@@ -143,6 +143,8 @@ for n = 1:p.Results.maxIter
             lr = 1./(p.Results.alpha*n);
         case 'exp'
             lr = exp(-p.Results.alpha*n);
+        otherwise
+            error("learning rate not recgonized");
     end
     
     % Apply gradient

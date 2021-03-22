@@ -1,7 +1,9 @@
 % Script to run domain adaptation experiments on heart disease data
 
 % Include dependencies
-addpath(genpath('../data'));
+addpath(genpath('data'));
+addpath(genpath('..\classifiers'));
+addpath(genpath('..\opt'));
 addpath(genpath('../util'));
 
 % Experimental parameters
