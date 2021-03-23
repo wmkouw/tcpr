@@ -6,7 +6,7 @@ This repository contains code of experiments in the paper:
 
 which is currently under review.
 
-This repository archives the implementations used to execute the experiments in the paper. For an up-to-date, easy-to-use implementation of TCPR, please refer to [libTLDA](https://github.com/wmkouw/libTLDA).
+This repository archives the implementations used to execute the experiments in the paper.
 
 ## Installation
 
