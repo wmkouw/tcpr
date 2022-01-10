@@ -1,19 +1,19 @@
 # Target contrastive pessimistic risk
 
-This repository contains code of experiments in the paper:
+This repository accompanies the paper:
 
 "Robust domain-adaptive discriminant analysis"
 
-which is currently under review.
-
-This repository archives the implementations used to execute the experiments in the paper.
+published in Pattern Recognition Letters, vol. 248, pp 107-113, 2021 ([doi](https://doi.org/10.1016/j.patrec.2021.05.005)). It contains the algorithms and experimental protocol used to execute the experiments.
 
 ## Installation
 
-Installation consists of downloading and adding to your path the following two packages:
+Download:
 
 - Junfeng Wens's Robust Covariate Shift Adjustment: https://webdocs.cs.ualberta.ca/~jwen4/codes/RobustLearning.zip
 - Mark Schmidt's minFunc: http://www.cs.ubc.ca/~schmidtm/Software/minFunc.html
+
+Add the unzipped folders to your path.
 
 ## Usage
 
