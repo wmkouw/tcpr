@@ -4,7 +4,7 @@ This repository accompanies the paper:
 
 "Robust domain-adaptive discriminant analysis"
 
-published in Pattern Recognition Letters, vol. 248, pp 107-113, 2021 ([doi](https://doi.org/10.1016/j.patrec.2021.05.005)). It contains the algorithms and experimental protocol used to execute the experiments.
+published in Pattern Recognition Letters, vol. 248, pp 107-113, 2021 ([doi](https://doi.org/10.1016/j.patrec.2021.05.005)). 
 
 ## Installation
 
